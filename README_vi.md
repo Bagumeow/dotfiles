@@ -26,7 +26,7 @@ Sau khi xong: **mở một cửa sổ Alacritty mới** → tự vào tmux.
 |---|---|---|
 | tmux config | `tmux/.tmux.conf` | `~/.tmux.conf` |
 | tmux launcher | `tmux/tmux-launch.sh` | `~/.config/tmux/tmux-launch.sh` |
-| nyan cat status bar | `tmux/nyan-anim.sh` | `~/.config/tmux/nyan-anim.sh` |
+| Goku kamehameha status bar | `tmux/kamehameha.sh` | `~/.config/tmux/kamehameha.sh` |
 | pwd ở status bar | `tmux/tmux-pwd.sh` | `~/.config/tmux/tmux-pwd.sh` |
 | widget usage Claude | `tmux/tmux-claude.sh` | `~/.config/tmux/tmux-claude.sh` |
 | statusLine Claude Code | `tmux/claude-usage-statusline.sh` | `~/.config/tmux/claude-usage-statusline.sh` |
@@ -34,9 +34,33 @@ Sau khi xong: **mở một cửa sổ Alacritty mới** → tự vào tmux.
 | zsh | `zsh/.zshrc` | `~/.zshrc` |
 
 `install.sh` còn tự cài: Homebrew, tmux, Alacritty, font JetBrainsMono Nerd, jq,
-oh-my-zsh + 3 plugin (autosuggestions, syntax-highlighting, completions),
-TPM + plugin tmux (resurrect + continuum), theme Alacritty, và các CLI mà
-`.zshrc` cần: **thefuck**, **python@3.12**, **kubectl**, **kubectx** (cho `kubens`).
+fswatch (cho `watch.sh`), oh-my-zsh + 3 plugin (autosuggestions,
+syntax-highlighting, completions), TPM + plugin tmux (resurrect + continuum),
+theme Alacritty, và các CLI mà `.zshrc` cần: **thefuck**, **python@3.12**,
+**kubectl**, **kubectx** (cho `kubens`).
+
+## Live reload khi đang sửa repo này (`watch.sh`)
+
+`install.sh` **copy** file (không symlink), nên sửa file trong repo sẽ không có
+tác dụng cho tới khi copy sang. Khi đang vọc repo, chạy:
+
+```bash
+./watch.sh
+```
+
+Nó sync toàn bộ một lần, rồi canh `tmux/`, `alacritty/` và `zsh/`: mỗi lần lưu
+file nào là copy đúng file đó sang vị trí thật (cùng mapping với `install.sh`,
+gồm cả thay `__TMUX_LAUNCH__` và `chmod +x`) và reload nơi nào được:
+
+| File vừa lưu | Chuyện gì xảy ra |
+|---|---|
+| `tmux/.tmux.conf` | copy + `tmux source-file` → áp dụng ngay lập tức |
+| `tmux/*.sh` | copy + `chmod +x` → status bar nhận ở giây kế tiếp |
+| `alacritty/alacritty.toml` | copy (đã thay placeholder) → Alacritty tự live-reload |
+| `zsh/.zshrc` | copy → chỉ shell **MỚI** nhận (shell đang mở: `source ~/.zshrc`) |
+
+Khác `install.sh`: **không** tạo backup `.bak` mỗi lần lưu — bản cũ đã nằm
+trong git. Cần `fswatch` (`install.sh` tự cài).
 
 ## Tự khôi phục session (cách hoạt động)
 
@@ -60,10 +84,11 @@ này bất cứ lúc nào: bấm `Ctrl-a C-c`.
 Thêm Alacritty vào **System Settings → General → Login Items → "+"**.
 Đăng nhập → Alacritty mở → `tmux-launch.sh` chạy → session cũ hiện lại.
 
-## Widget usage Claude ở status bar (`5h NN%`)
+## Widget usage Claude ở status bar (`5h NN% 7d NN%`)
 
-Hiện **% CÒN LẠI của cửa sổ rate-limit 5 giờ** của Claude Code, kèm giờ reset
-(vd `5h 70% ↻18:50`). Tô màu: xanh → vàng → đỏ khi sắp hết. Dữ liệu cũ hơn
+Hiện **% CÒN LẠI của cửa sổ rate-limit 5 giờ** của Claude Code (dạng bar) và
+của **cửa sổ 7 ngày** (chỉ số, không bar), kèm giờ reset
+(vd `5h ████████░░ 80% 7d 88% ↻14:40`). Tô màu: xanh → vàng → đỏ khi sắp hết. Dữ liệu cũ hơn
 15' (không có session Claude nào chạy) sẽ bị làm mờ + thêm dấu `~`.
 
 Cách hoạt động:
@@ -116,7 +141,7 @@ syntax-highlighting, completions), thêm alias và prompt tuỳ biến.
 
 | Phím | Tác dụng |
 |---|---|
-| `Ctrl-a` `\|` / `-` | chia pane dọc / ngang |
+| `Ctrl-a` `v` / `h` | chia pane dọc / ngang |
 | `Alt + mũi tên` | chuyển pane (không cần prefix) |
 | `Alt + số` | chuyển window |
 | `Ctrl-a C-c` | tạo session mới ở thư mục mặc định (`ai-stack`) |

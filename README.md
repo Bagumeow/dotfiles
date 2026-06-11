@@ -26,7 +26,7 @@ When it finishes: **open a new Alacritty window** → it drops you straight into
 |---|---|---|
 | tmux config | `tmux/.tmux.conf` | `~/.tmux.conf` |
 | tmux launcher | `tmux/tmux-launch.sh` | `~/.config/tmux/tmux-launch.sh` |
-| nyan cat status bar | `tmux/nyan-anim.sh` | `~/.config/tmux/nyan-anim.sh` |
+| Goku kamehameha status bar | `tmux/kamehameha.sh` | `~/.config/tmux/kamehameha.sh` |
 | pwd in status bar | `tmux/tmux-pwd.sh` | `~/.config/tmux/tmux-pwd.sh` |
 | Claude usage widget | `tmux/tmux-claude.sh` | `~/.config/tmux/tmux-claude.sh` |
 | Claude Code statusLine | `tmux/claude-usage-statusline.sh` | `~/.config/tmux/claude-usage-statusline.sh` |
@@ -34,9 +34,34 @@ When it finishes: **open a new Alacritty window** → it drops you straight into
 | zsh | `zsh/.zshrc` | `~/.zshrc` |
 
 `install.sh` also installs: Homebrew, tmux, Alacritty, JetBrainsMono Nerd font, jq,
-oh-my-zsh + 3 plugins (autosuggestions, syntax-highlighting, completions),
-TPM + tmux plugins (resurrect + continuum), the Alacritty theme, and the CLIs
-`.zshrc` needs: **thefuck**, **python@3.12**, **kubectl**, **kubectx** (for `kubens`).
+fswatch (for `watch.sh`), oh-my-zsh + 3 plugins (autosuggestions,
+syntax-highlighting, completions), TPM + tmux plugins (resurrect + continuum),
+the Alacritty theme, and the CLIs `.zshrc` needs: **thefuck**, **python@3.12**,
+**kubectl**, **kubectx** (for `kubens`).
+
+## Live reload while editing this repo (`watch.sh`)
+
+`install.sh` **copies** files (no symlinks), so editing a file in the repo does
+nothing until it's copied across. While working on the repo, run:
+
+```bash
+./watch.sh
+```
+
+It syncs everything once, then watches `tmux/`, `alacritty/` and `zsh/`: every
+save copies that file to its live location (same mapping as `install.sh`,
+including the `__TMUX_LAUNCH__` substitution and `chmod +x`) and reloads where
+possible:
+
+| File saved | What happens |
+|---|---|
+| `tmux/.tmux.conf` | copied + `tmux source-file` → applies instantly |
+| `tmux/*.sh` | copied + `chmod +x` → status bar picks it up the next second |
+| `alacritty/alacritty.toml` | copied (placeholder substituted) → Alacritty live-reloads itself |
+| `zsh/.zshrc` | copied → **new** shells only (existing ones: `source ~/.zshrc`) |
+
+Unlike `install.sh`, it does **not** create `.bak` backups on every save — the
+old version is already in git. Requires `fswatch` (installed by `install.sh`).
 
 ## Session auto-restore (how it works)
 
@@ -61,10 +86,11 @@ dir on demand at any time, press `Ctrl-a C-c`.
 Add Alacritty to **System Settings → General → Login Items → "+"**.
 Log in → Alacritty opens → `tmux-launch.sh` runs → your old session reappears.
 
-## Claude usage widget in the status bar (`5h NN%`)
+## Claude usage widget in the status bar (`5h NN% 7d NN%`)
 
-Shows the **remaining % of Claude Code's 5-hour rate-limit window**, plus the reset
-time (e.g. `5h 70% ↻18:50`). Color-coded: green → yellow → red as it runs low. Data
+Shows the **remaining % of Claude Code's 5-hour rate-limit window** (as a bar)
+and of the **7-day window** (number only), plus the reset time (e.g.
+`5h ████████░░ 80% 7d 88% ↻14:40`). Color-coded: green → yellow → red as it runs low. Data
 older than 15 min (no Claude session running) is dimmed and prefixed with `~`.
 
 How it works:
@@ -119,7 +145,7 @@ just mistyped.
 
 | Key | Action |
 |---|---|
-| `Ctrl-a` `\|` / `-` | split pane vertically / horizontally |
+| `Ctrl-a` `v` / `h` | split pane vertically / horizontally |
 | `Alt + arrow` | move between panes (no prefix needed) |
 | `Alt + number` | switch window |
 | `Ctrl-a C-c` | new session in the default dir (`ai-stack`) |

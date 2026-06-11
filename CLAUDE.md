@@ -22,6 +22,7 @@ e.g. `tmux: fix status bar widget`, `zsh: add kubectl aliases`, `dotfiles: ...`.
 
 ```bash
 ./install.sh                 # deploy/redeploy everything (idempotent, macOS-only)
+./watch.sh                   # live reload: watch the repo, auto-deploy each saved file
 bash -n install.sh           # syntax-check a shell script before committing
 tmux source-file ~/.tmux.conf   # apply tmux edits live (or Ctrl-a r inside tmux)
 ```
@@ -35,7 +36,9 @@ scripts and, where practical, re-running `./install.sh` (safe to run repeatedly)
 locations under `$HOME` — it does **not** symlink. Consequences:
 
 - Editing a file in this repo does **not** affect the running machine until you
-  copy it across (re-run `./install.sh`, or `cp` the one file manually).
+  copy it across (re-run `./install.sh`, `cp` the one file manually, or keep
+  `./watch.sh` running — it auto-deploys every save with the same mapping, no
+  `.bak` backups).
 - Conversely, configs already live at `~/.config/tmux/*.sh`, `~/.tmux.conf`,
   `~/.config/alacritty/alacritty.toml`, `~/.zshrc` — the repo is the source of
   truth, those are deployed copies.
@@ -74,7 +77,8 @@ Alacritty's launcher, not continuum's keystroke mechanism (which needs
 Accessibility permission and tends to nest tmux). Don't flip it on.
 
 **Claude Code usage widget (two-process cache contract).** The tmux status bar
-shows remaining % of Claude's 5-hour rate-limit window:
+shows remaining % of Claude's 5-hour rate-limit window (bar + number) and of
+the 7-day window (number only):
 
 ```
 Claude Code --(statusLine, JSON on stdin)--> claude-usage-statusline.sh
@@ -95,13 +99,13 @@ Claude Code --(statusLine, JSON on stdin)--> claude-usage-statusline.sh
 
 **tmux status bar** (`.tmux.conf` `status-right`) shells out to the installed
 scripts at `~/.config/tmux/*.sh` (`tmux-claude.sh`, `tmux-pwd.sh`,
-`nyan-anim.sh`) — those paths are the deployed copies, not the repo. The
+`kamehameha.sh`) — those paths are the deployed copies, not the repo. The
 animated widgets rely on `status-interval 1`.
 
 ## Conventions in the configs
 
 - tmux prefix is **`Ctrl-a`** (not the default `Ctrl-b`); copy-mode is **emacs**,
-  not vi; panes split with `|` / `-`; Alt+arrows/Alt+number move without prefix.
+  not vi; panes split with `v` / `h`; Alt+arrows/Alt+number move without prefix.
 - `.zshrc` overrides the oh-my-zsh theme prompt with a custom `PROMPT` and helper
   functions; it must stay **below** `source $ZSH/oh-my-zsh.sh`.
 - `.zshrc` contains machine-specific absolute paths (JAVA_HOME, Maven, Antigravity
