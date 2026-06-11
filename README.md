@@ -31,9 +31,10 @@ Sau khi xong: **mở một cửa sổ Alacritty mới** → tự vào tmux.
 | Alacritty | `alacritty/alacritty.toml` | `~/.config/alacritty/alacritty.toml` |
 | zsh | `zsh/.zshrc` | `~/.zshrc` |
 
-`install.sh` còn tự cài: Homebrew, tmux, Alacritty, font JetBrainsMono Nerd,
+`install.sh` còn tự cài: Homebrew, tmux, Alacritty, font JetBrainsMono Nerd, jq,
 oh-my-zsh + 3 plugin (autosuggestions, syntax-highlighting, completions),
-TPM + plugin tmux (resurrect + continuum), theme Alacritty.
+TPM + plugin tmux (resurrect + continuum), theme Alacritty, và các CLI mà
+`.zshrc` cần: **thefuck**, **python@3.12**, **kubectl**, **kubectx** (cho `kubens`).
 
 ## Tự khôi phục session (cách hoạt động)
 
@@ -73,6 +74,34 @@ không đụng các key khác; có backup).
 > token của Max/Pro. Thứ chính thống & trung thực nhất là **% cửa sổ rate-limit**
 > mà Claude Code đưa cho `statusLine` (`rate_limits.five_hour.used_percentage`,
 > `resets_at`). Widget chỉ cập nhật khi có session Claude Code đang chạy.
+
+## zsh — alias & prompt
+
+`.zshrc` chạy oh-my-zsh (theme `robbyrussell`) + 3 plugin (autosuggestions,
+syntax-highlighting, completions), thêm alias và prompt tuỳ biến.
+
+**Alias**
+
+| Alias | Lệnh |
+|---|---|
+| `python` / `pip` | `python3.12` / `pip3.12` |
+| `pull` `push` `commit` `add` `status` `checkout` | lệnh `git` tương ứng |
+| `k` `kube` | `kubectl` |
+| `kns` | `kubens` (đổi k8s namespace) |
+| `po` `svc` `deploy` `ingress` `configmap` `secret` `pvc` | `kubectl get <resource>` |
+| `describe` | `kubectl describe` |
+| `use-context` | `kubectl config use-context` |
+| `claudesudo` | `claude --dangerously-skip-permissions` |
+| `unquar` | gỡ cờ quarantine của macOS (`xattr -dr com.apple.quarantine`) |
+
+**Prompt** tự đổi theo ngữ cảnh:
+
+- Trong virtualenv: `(.venv)-user-dir(branch)$`
+- Ngoài venv: `user(namespace)-dir(branch)$` — `namespace` là k8s namespace hiện
+  tại (đọc qua `kubens`, fallback `default` nếu không có).
+- `dir` chỉ hiện khi **không** ở `$HOME`; `(branch)` chỉ hiện khi đang trong git repo.
+
+**thefuck**: `eval $(thefuck --alias)` — gõ `fuck` để sửa nhanh lệnh vừa gõ sai.
 
 ## Phím tắt tmux (prefix = `Ctrl-a`)
 

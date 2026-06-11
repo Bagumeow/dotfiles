@@ -47,9 +47,15 @@ fi
 if [ -x /opt/homebrew/bin/brew ]; then eval "$(/opt/homebrew/bin/brew shellenv)";
 elif [ -x /usr/local/bin/brew ]; then eval "$(/usr/local/bin/brew shellenv)"; fi
 
-log "Cài tmux, Alacritty, font Nerd, jq..."
+log "Cài tmux, Alacritty, font Nerd, jq + CLI mà .zshrc cần..."
 brew list jq              >/dev/null 2>&1 || brew install jq
 brew list tmux            >/dev/null 2>&1 || brew install tmux
+# CLI mà .zshrc tham chiếu (alias + prompt + thefuck). Dùng `command -v`
+# để khỏi cài lại nếu đã có sẵn ngoài Homebrew.
+command -v thefuck        >/dev/null 2>&1 || brew install thefuck     # eval $(thefuck --alias)
+command -v python3.12     >/dev/null 2>&1 || brew install python@3.12 # alias python/pip
+command -v kubectl        >/dev/null 2>&1 || brew install kubectl     # alias k/kube/po/svc...
+command -v kubens         >/dev/null 2>&1 || brew install kubectx     # alias kns + namespace ở prompt
 brew list --cask alacritty                  >/dev/null 2>&1 || brew install --cask alacritty
 brew list --cask font-jetbrains-mono-nerd-font >/dev/null 2>&1 || brew install --cask font-jetbrains-mono-nerd-font
 
