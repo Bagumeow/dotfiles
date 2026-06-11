@@ -8,6 +8,12 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 T="$(command -v tmux)"
 [ -z "$T" ] && { echo "Không tìm thấy tmux trong PATH"; exec "${SHELL:-/bin/zsh}"; }
 
+# Thư mục mặc định khi MỞ MỚI tmux (chưa có gì để khôi phục). Session mới tạo
+# sau khi cd sẽ bắt đầu ở đây. Session do tmux-continuum khôi phục vẫn giữ
+# nguyên thư mục cũ của chúng. Đổi đường dẫn này cho máy khác nếu cần.
+DEFAULT_DIR="/Users/nghiale/my-workspace/loan-factory/ai-stack"
+[ -d "$DEFAULT_DIR" ] && cd "$DEFAULT_DIR"
+
 # Đang ở trong tmux rồi (vd: pane gọi lại) -> chạy shell thường, tránh lồng nhau
 [ -n "$TMUX" ] && exec "${SHELL:-/bin/zsh}"
 

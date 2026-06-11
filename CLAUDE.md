@@ -61,6 +61,12 @@ at install time. **Do not hardcode the path in the repo file** — keep the
 placeholder. `tmux-launch.sh` attaches to an existing session, or boots the
 server (letting tmux-continuum restore the last session) then attaches.
 
+**Default directory for new sessions.** `tmux-launch.sh` `cd`s into `DEFAULT_DIR`
+(guarded by `[ -d ]`) before creating a session, and `.tmux.conf` binds
+`Ctrl-a C-c` to `new-session -c <same path>`. **That absolute path is duplicated
+in both files — change both together.** It only affects genuinely new sessions;
+continuum-restored sessions keep their own saved directories.
+
 **Session persistence.** tmux-resurrect + tmux-continuum save every 15 min
 (`@continuum-save-interval`) and `@continuum-restore 'on'` restores on server
 start. `@continuum-boot` is intentionally **off** — auto-start is handled by

@@ -50,6 +50,12 @@ TPM + tmux plugins (resurrect + continuum), the Alacritty theme, and the CLIs
 > used — it needs Accessibility permission and tends to nest tmux. Auto-entering
 > tmux is handled by Alacritty instead.
 
+**Default directory for new sessions.** `tmux-launch.sh` has a `DEFAULT_DIR`
+(currently `~/my-workspace/loan-factory/ai-stack`) and `cd`s into it before
+creating a session — so a fresh start with nothing to restore opens there.
+Restored sessions keep their own saved directory. To open a new session in that
+dir on demand at any time, press `Ctrl-a C-c`.
+
 ### Want Alacritty to open automatically at login?
 
 Add Alacritty to **System Settings → General → Login Items → "+"**.
@@ -116,6 +122,7 @@ just mistyped.
 | `Ctrl-a` `\|` / `-` | split pane vertically / horizontally |
 | `Alt + arrow` | move between panes (no prefix needed) |
 | `Alt + number` | switch window |
+| `Ctrl-a C-c` | new session in the default dir (`ai-stack`) |
 | `Ctrl-a m` | zoom pane |
 | `Ctrl-a Ctrl-s` / `Ctrl-a Ctrl-r` | save / restore session |
 | `Ctrl-a r` | reload `~/.tmux.conf` |

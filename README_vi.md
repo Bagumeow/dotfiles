@@ -49,6 +49,12 @@ TPM + plugin tmux (resurrect + continuum), theme Alacritty, và các CLI mà
 > Không dùng cơ chế `@continuum-boot` (gõ phím qua AppleScript) vì cần quyền
 > Accessibility và dễ gây lồng tmux. Việc auto-vào-tmux do Alacritty đảm nhận.
 
+**Thư mục mặc định cho session mới.** `tmux-launch.sh` có biến `DEFAULT_DIR`
+(hiện là `~/my-workspace/loan-factory/ai-stack`) và `cd` vào đó trước khi tạo
+session — nên lần mở mới mà không có gì để khôi phục sẽ vào thẳng thư mục này.
+Session được khôi phục vẫn giữ thư mục cũ của nó. Muốn mở session mới ở thư mục
+này bất cứ lúc nào: bấm `Ctrl-a C-c`.
+
 ### Muốn Alacritty tự mở ngay khi đăng nhập máy?
 
 Thêm Alacritty vào **System Settings → General → Login Items → "+"**.
@@ -113,6 +119,7 @@ syntax-highlighting, completions), thêm alias và prompt tuỳ biến.
 | `Ctrl-a` `\|` / `-` | chia pane dọc / ngang |
 | `Alt + mũi tên` | chuyển pane (không cần prefix) |
 | `Alt + số` | chuyển window |
+| `Ctrl-a C-c` | tạo session mới ở thư mục mặc định (`ai-stack`) |
 | `Ctrl-a m` | zoom pane |
 | `Ctrl-a Ctrl-s` / `Ctrl-a Ctrl-r` | lưu / khôi phục session |
 | `Ctrl-a r` | reload `~/.tmux.conf` |
