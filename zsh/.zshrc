@@ -153,7 +153,7 @@ dir_with_separator() {
     if [[ "$PWD" == "$HOME" ]]; then
         echo ""
     else
-        echo "%F{white}-%f%F{blue}%1~%f"
+        echo "%F{white}-%f%F{75}%1~%f"
     fi
 }
 
