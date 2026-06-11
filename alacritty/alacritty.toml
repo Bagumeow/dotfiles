@@ -9,6 +9,14 @@ draw_bold_text_with_bright_colors = true
 [colors.primary]
 background = '#1e2030'
 
+# Ghi đè màu xanh dương của theme (#0000b2 quá tối, không đọc được trên nền tối)
+# Dùng xanh Tokyonight Moon — cùng palette với nền #1e2030 ở trên
+[colors.normal]
+blue = '#82aaff'
+
+[colors.bright]
+blue = '#9db8ff'
+
 [window]
 padding = { x = 0, y = 0 }
 decorations = "none"
