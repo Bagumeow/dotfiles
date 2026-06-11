@@ -1,120 +1,126 @@
 # dotfiles
 
-Setup terminal cá nhân cho macOS: **tmux + Alacritty + zsh (oh-my-zsh)**.
-Mục tiêu: cài 1 phát trên máy Mac mới là dùng được ngay, và **session tmux tự
-khôi phục sau khi tắt/mở máy**.
+📖 **English** · [Tiếng Việt](README_vi.md)
 
-## Cài đặt
+Personal macOS terminal setup: **tmux + Alacritty + zsh (oh-my-zsh)**.
+Goal: one command on a fresh Mac and you're ready to go, with **tmux sessions
+that auto-restore after a reboot**.
+
+## Install
 
 ```bash
-git clone <repo-url> ~/dotfiles
+git clone git@github.com:Bagumeow/dotfiles.git ~/dotfiles
 cd ~/dotfiles
 ./install.sh
 ```
 
-Script sẽ **ghi đè** mọi config liên quan (kể cả khi máy đã có sẵn tmux/zsh).
-Bản cũ được backup thành `*.bak.<timestamp>` trước khi ghi đè, nên không mất gì.
-Chạy lại nhiều lần đều an toàn (idempotent).
+The script **overwrites** every related config (even if tmux/zsh already exist).
+The previous version is backed up to `*.bak.<timestamp>` before being replaced,
+so nothing is lost. Safe to run repeatedly (idempotent).
 
-Sau khi xong: **mở một cửa sổ Alacritty mới** → tự vào tmux.
+When it finishes: **open a new Alacritty window** → it drops you straight into tmux.
 
-## Có gì bên trong
+## What's inside
 
-| Thành phần | File trong repo | Cài tới |
+| Component | File in repo | Installed to |
 |---|---|---|
 | tmux config | `tmux/.tmux.conf` | `~/.tmux.conf` |
 | tmux launcher | `tmux/tmux-launch.sh` | `~/.config/tmux/tmux-launch.sh` |
 | nyan cat status bar | `tmux/nyan-anim.sh` | `~/.config/tmux/nyan-anim.sh` |
-| pwd ở status bar | `tmux/tmux-pwd.sh` | `~/.config/tmux/tmux-pwd.sh` |
-| widget usage Claude | `tmux/tmux-claude.sh` | `~/.config/tmux/tmux-claude.sh` |
-| statusLine Claude Code | `tmux/claude-usage-statusline.sh` | `~/.config/tmux/claude-usage-statusline.sh` |
+| pwd in status bar | `tmux/tmux-pwd.sh` | `~/.config/tmux/tmux-pwd.sh` |
+| Claude usage widget | `tmux/tmux-claude.sh` | `~/.config/tmux/tmux-claude.sh` |
+| Claude Code statusLine | `tmux/claude-usage-statusline.sh` | `~/.config/tmux/claude-usage-statusline.sh` |
 | Alacritty | `alacritty/alacritty.toml` | `~/.config/alacritty/alacritty.toml` |
 | zsh | `zsh/.zshrc` | `~/.zshrc` |
 
-`install.sh` còn tự cài: Homebrew, tmux, Alacritty, font JetBrainsMono Nerd, jq,
-oh-my-zsh + 3 plugin (autosuggestions, syntax-highlighting, completions),
-TPM + plugin tmux (resurrect + continuum), theme Alacritty, và các CLI mà
-`.zshrc` cần: **thefuck**, **python@3.12**, **kubectl**, **kubectx** (cho `kubens`).
+`install.sh` also installs: Homebrew, tmux, Alacritty, JetBrainsMono Nerd font, jq,
+oh-my-zsh + 3 plugins (autosuggestions, syntax-highlighting, completions),
+TPM + tmux plugins (resurrect + continuum), the Alacritty theme, and the CLIs
+`.zshrc` needs: **thefuck**, **python@3.12**, **kubectl**, **kubectx** (for `kubens`).
 
-## Tự khôi phục session (cách hoạt động)
+## Session auto-restore (how it works)
 
-- **tmux-resurrect** + **tmux-continuum**: tự lưu session mỗi **15 phút**
-  (và lưu cả nội dung pane). Lưu/khôi phục tay: `Ctrl-a Ctrl-s` / `Ctrl-a Ctrl-r`.
-- **Alacritty** chạy thẳng `tmux-launch.sh` (`[terminal.shell]`), nên mở cửa sổ
-  nào cũng vào tmux. Sau reboot, lần mở đầu tiên sẽ khởi động tmux server →
-  continuum tự khôi phục session đã lưu.
+- **tmux-resurrect** + **tmux-continuum**: auto-save the session every **15 minutes**
+  (including pane contents). Manual save/restore: `Ctrl-a Ctrl-s` / `Ctrl-a Ctrl-r`.
+- **Alacritty** runs `tmux-launch.sh` directly (`[terminal.shell]`), so any window
+  you open enters tmux. After a reboot, the first window starts the tmux server →
+  continuum auto-restores the saved session.
 
-> Không dùng cơ chế `@continuum-boot` (gõ phím qua AppleScript) vì cần quyền
-> Accessibility và dễ gây lồng tmux. Việc auto-vào-tmux do Alacritty đảm nhận.
+> The `@continuum-boot` mechanism (sending keystrokes via AppleScript) is **not**
+> used — it needs Accessibility permission and tends to nest tmux. Auto-entering
+> tmux is handled by Alacritty instead.
 
-### Muốn Alacritty tự mở ngay khi đăng nhập máy?
+### Want Alacritty to open automatically at login?
 
-Thêm Alacritty vào **System Settings → General → Login Items → "+"**.
-Đăng nhập → Alacritty mở → `tmux-launch.sh` chạy → session cũ hiện lại.
+Add Alacritty to **System Settings → General → Login Items → "+"**.
+Log in → Alacritty opens → `tmux-launch.sh` runs → your old session reappears.
 
-## Widget usage Claude ở status bar (`5h NN%`)
+## Claude usage widget in the status bar (`5h NN%`)
 
-Hiện **% CÒN LẠI của cửa sổ rate-limit 5 giờ** của Claude Code, kèm giờ reset
-(vd `5h 70% ↻18:50`). Tô màu: xanh → vàng → đỏ khi sắp hết. Dữ liệu cũ hơn
-15' (không có session Claude nào chạy) sẽ bị làm mờ + thêm dấu `~`.
+Shows the **remaining % of Claude Code's 5-hour rate-limit window**, plus the reset
+time (e.g. `5h 70% ↻18:50`). Color-coded: green → yellow → red as it runs low. Data
+older than 15 min (no Claude session running) is dimmed and prefixed with `~`.
 
-Cách hoạt động:
+How it works:
 
 ```
-Claude Code  --(statusLine, stdin JSON)-->  claude-usage-statusline.sh
-                                                   |  ghi ~/.cache/claude-usage
-                                                   v
+Claude Code  --(statusLine, JSON on stdin)-->  claude-usage-statusline.sh
+                                                     |  writes ~/.cache/claude-usage
+                                                     v
                                    tmux #(tmux-claude.sh)  -> status bar
 ```
 
-`install.sh` tự gắn `statusLine` vào `~/.claude/settings.json` (merge bằng jq,
-không đụng các key khác; có backup).
+`install.sh` wires the `statusLine` into `~/.claude/settings.json` (merged with jq,
+other keys untouched, backed up first).
 
-> ⚠️ **Không có "số token còn lại" tuyệt đối.** Anthropic không công bố hạn mức
-> token của Max/Pro. Thứ chính thống & trung thực nhất là **% cửa sổ rate-limit**
-> mà Claude Code đưa cho `statusLine` (`rate_limits.five_hour.used_percentage`,
-> `resets_at`). Widget chỉ cập nhật khi có session Claude Code đang chạy.
+> ⚠️ **There is no absolute "tokens remaining" number.** Anthropic doesn't publish
+> the Max/Pro token quotas. The most official and honest thing available is the
+> **rate-limit window %** that Claude Code hands to `statusLine`
+> (`rate_limits.five_hour.used_percentage`, `resets_at`). The widget only updates
+> while a Claude Code session is running.
 
-## zsh — alias & prompt
+## zsh — aliases & prompt
 
-`.zshrc` chạy oh-my-zsh (theme `robbyrussell`) + 3 plugin (autosuggestions,
-syntax-highlighting, completions), thêm alias và prompt tuỳ biến.
+`.zshrc` runs oh-my-zsh (theme `robbyrussell`) + 3 plugins (autosuggestions,
+syntax-highlighting, completions), plus custom aliases and a custom prompt.
 
-**Alias**
+**Aliases**
 
-| Alias | Lệnh |
+| Alias | Command |
 |---|---|
 | `python` / `pip` | `python3.12` / `pip3.12` |
-| `pull` `push` `commit` `add` `status` `checkout` | lệnh `git` tương ứng |
+| `pull` `push` `commit` `add` `status` `checkout` | the matching `git` command |
 | `k` `kube` | `kubectl` |
-| `kns` | `kubens` (đổi k8s namespace) |
+| `kns` | `kubens` (switch k8s namespace) |
 | `po` `svc` `deploy` `ingress` `configmap` `secret` `pvc` | `kubectl get <resource>` |
 | `describe` | `kubectl describe` |
 | `use-context` | `kubectl config use-context` |
+| `ala` | open a new Alacritty window in the current directory |
 | `claudesudo` | `claude --dangerously-skip-permissions` |
-| `unquar` | gỡ cờ quarantine của macOS (`xattr -dr com.apple.quarantine`) |
+| `unquar` | remove macOS quarantine flag (`xattr -dr com.apple.quarantine`) |
 
-**Prompt** tự đổi theo ngữ cảnh:
+**Prompt** adapts to context:
 
-- Trong virtualenv: `(.venv)-user-dir(branch)$`
-- Ngoài venv: `user(namespace)-dir(branch)$` — `namespace` là k8s namespace hiện
-  tại (đọc qua `kubens`, fallback `default` nếu không có).
-- `dir` chỉ hiện khi **không** ở `$HOME`; `(branch)` chỉ hiện khi đang trong git repo.
+- Inside a virtualenv: `(.venv)-user-dir(branch)$`
+- Outside a venv: `user(namespace)-dir(branch)$` — `namespace` is the current k8s
+  namespace (read via `kubens`, falls back to `default` if unavailable).
+- `dir` only shows when **not** in `$HOME`; `(branch)` only shows inside a git repo.
 
-**thefuck**: `eval $(thefuck --alias)` — gõ `fuck` để sửa nhanh lệnh vừa gõ sai.
+**thefuck**: `eval $(thefuck --alias)` — type `fuck` to quickly fix the command you
+just mistyped.
 
-## Phím tắt tmux (prefix = `Ctrl-a`)
+## tmux keybindings (prefix = `Ctrl-a`)
 
-| Phím | Tác dụng |
+| Key | Action |
 |---|---|
-| `Ctrl-a` `\|` / `-` | chia pane dọc / ngang |
-| `Alt + mũi tên` | chuyển pane (không cần prefix) |
-| `Alt + số` | chuyển window |
+| `Ctrl-a` `\|` / `-` | split pane vertically / horizontally |
+| `Alt + arrow` | move between panes (no prefix needed) |
+| `Alt + number` | switch window |
 | `Ctrl-a m` | zoom pane |
-| `Ctrl-a Ctrl-s` / `Ctrl-a Ctrl-r` | lưu / khôi phục session |
+| `Ctrl-a Ctrl-s` / `Ctrl-a Ctrl-r` | save / restore session |
 | `Ctrl-a r` | reload `~/.tmux.conf` |
 
-## Gỡ / khôi phục bản cũ
+## Restoring an old version
 
-Mỗi file cũ được backup kèm timestamp, ví dụ `~/.tmux.conf.bak.20260608_2245`.
-Đổi tên lại để khôi phục.
+Each old file is backed up with a timestamp, e.g. `~/.tmux.conf.bak.20260608_2245`.
+Rename it back to restore.

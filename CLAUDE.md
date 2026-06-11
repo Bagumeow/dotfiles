@@ -9,8 +9,10 @@ is shell scripts and config files.
 
 ## Language convention
 
-Comments and the README are written in **Vietnamese** — match that when editing
-those files.
+Code comments are written in **Vietnamese** — match that when editing scripts.
+The README is bilingual: **`README.md` is English, `README_vi.md` is Vietnamese**
+(each links to the other at the top). Keep them in sync — a change to one must be
+mirrored in the other.
 
 **Commit messages must ALWAYS be written in English**, regardless of the
 Vietnamese style of older commits. Keep the existing `scope: description` form,
@@ -42,8 +44,8 @@ locations under `$HOME` — it does **not** symlink. Consequences:
 
 The list of files to copy is **hardcoded** in `install.sh` (explicit `cp` +
 `chmod` lines, not a glob). **Adding or renaming a tmux script requires editing
-`install.sh`'s copy/chmod block AND the file table in `README.md`** — otherwise
-the new file is in the repo but never deployed.
+`install.sh`'s copy/chmod block AND the file tables in both `README.md` and
+`README_vi.md`** — otherwise the new file is in the repo but never deployed.
 
 `install.sh` also installs Homebrew packages the configs depend on (tmux,
 alacritty, jetbrains-mono nerd font, jq, plus the CLIs `.zshrc` references:
