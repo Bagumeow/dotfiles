@@ -131,7 +131,7 @@ alias pvc="kubectl get pvc"
 alias use-context="kubectl config use-context"
 
 alias claudesudo="claude --dangerously-skip-permissions"
-
+alias ala='alacritty msg create-window --working-directory "$PWD" 2>/dev/null || open -na Alacritty --args --working-directory "$PWD"'
 # Disable default virtualenv prompt modification
 export VIRTUAL_ENV_DISABLE_PROMPT=1
 
