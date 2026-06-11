@@ -50,6 +50,7 @@ elif [ -x /usr/local/bin/brew ]; then eval "$(/usr/local/bin/brew shellenv)"; fi
 log "Cài tmux, Alacritty, font Nerd, jq + CLI mà .zshrc cần..."
 brew list jq              >/dev/null 2>&1 || brew install jq
 brew list tmux            >/dev/null 2>&1 || brew install tmux
+brew list fswatch         >/dev/null 2>&1 || brew install fswatch     # watch.sh (live reload) cần
 # CLI mà .zshrc tham chiếu (alias + prompt + thefuck). Dùng `command -v`
 # để khỏi cài lại nếu đã có sẵn ngoài Homebrew.
 command -v thefuck        >/dev/null 2>&1 || brew install thefuck     # eval $(thefuck --alias)
@@ -66,12 +67,12 @@ log "Đặt config tmux..."
 mkdir -p ~/.config/tmux
 backup ~/.tmux.conf
 cp "$DOTFILES_DIR/tmux/.tmux.conf"      ~/.tmux.conf
-cp "$DOTFILES_DIR/tmux/nyan-anim.sh"    ~/.config/tmux/nyan-anim.sh
+cp "$DOTFILES_DIR/tmux/kamehameha.sh"   ~/.config/tmux/kamehameha.sh
 cp "$DOTFILES_DIR/tmux/tmux-launch.sh"  ~/.config/tmux/tmux-launch.sh
 cp "$DOTFILES_DIR/tmux/tmux-pwd.sh"     ~/.config/tmux/tmux-pwd.sh
 cp "$DOTFILES_DIR/tmux/tmux-claude.sh"  ~/.config/tmux/tmux-claude.sh
 cp "$DOTFILES_DIR/tmux/claude-usage-statusline.sh" ~/.config/tmux/claude-usage-statusline.sh
-chmod +x ~/.config/tmux/nyan-anim.sh ~/.config/tmux/tmux-launch.sh ~/.config/tmux/tmux-pwd.sh \
+chmod +x ~/.config/tmux/kamehameha.sh ~/.config/tmux/tmux-launch.sh ~/.config/tmux/tmux-pwd.sh \
          ~/.config/tmux/tmux-claude.sh ~/.config/tmux/claude-usage-statusline.sh
 
 # ---------------------------------------------------------------------------
