@@ -59,6 +59,7 @@ command -v kubectl        >/dev/null 2>&1 || brew install kubectl     # alias k/
 command -v kubens         >/dev/null 2>&1 || brew install kubectx     # alias kns + namespace ở prompt
 brew list --cask alacritty                  >/dev/null 2>&1 || brew install --cask alacritty
 brew list --cask font-jetbrains-mono-nerd-font >/dev/null 2>&1 || brew install --cask font-jetbrains-mono-nerd-font
+brew list --cask hammerspoon                >/dev/null 2>&1 || brew install --cask hammerspoon  # kêu ↑/↓ trong Alacritty
 
 # ---------------------------------------------------------------------------
 # 2) tmux config + scripts
@@ -87,7 +88,18 @@ sed "s|__TMUX_LAUNCH__|$HOME/.config/tmux/tmux-launch.sh|g" \
 clone_or_pull https://github.com/alacritty/alacritty-theme ~/.config/alacritty/themes
 
 # ---------------------------------------------------------------------------
-# 4) oh-my-zsh + plugins + .zshrc
+# 4) Hammerspoon — kêu "Tink" khi bấm ↑/↓ lúc Alacritty đang front
+#    (cần cấp quyền Accessibility cho Hammerspoon, làm tay 1 lần)
+# ---------------------------------------------------------------------------
+log "Đặt config Hammerspoon..."
+mkdir -p ~/.hammerspoon
+backup ~/.hammerspoon/init.lua
+cp "$DOTFILES_DIR/hammerspoon/init.lua" ~/.hammerspoon/init.lua
+warn "Cấp quyền cho Hammerspoon: System Settings → Privacy & Security →"
+warn "Accessibility → bật Hammerspoon (mở app Hammerspoon 1 lần để được hỏi)."
+
+# ---------------------------------------------------------------------------
+# 5) oh-my-zsh + plugins + .zshrc
 # ---------------------------------------------------------------------------
 export ZSH="${ZSH:-$HOME/.oh-my-zsh}"
 if [ ! -d "$ZSH" ]; then
@@ -107,14 +119,14 @@ backup ~/.zshrc
 cp "$DOTFILES_DIR/zsh/.zshrc" ~/.zshrc
 
 # ---------------------------------------------------------------------------
-# 5) TPM + plugin tmux (resurrect + continuum) — cài headless
+# 6) TPM + plugin tmux (resurrect + continuum) — cài headless
 # ---------------------------------------------------------------------------
 log "Cài TPM + plugin tmux..."
 clone_or_pull https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 ~/.tmux/plugins/tpm/bin/install_plugins || warn "install_plugins lỗi (chạy lại prefix + I trong tmux)"
 
 # ---------------------------------------------------------------------------
-# 6) Claude Code statusLine + hook -> cầu nối % rate-limit ra tmux + âm thanh
+# 7) Claude Code statusLine + hook -> cầu nối % rate-limit ra tmux + âm thanh
 #    - statusLine: widget "5h NN%" ở status bar đọc cache do statusLine ghi
 #    - hook (Stop/Notification...): lấy từ .claude/settings.json của repo, vd
 #      kêu âm thanh khi Claude trả lời xong / cần mình nhập liệu (afplay)
@@ -148,7 +160,7 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 7) Đặt zsh làm shell mặc định
+# 8) Đặt zsh làm shell mặc định
 # ---------------------------------------------------------------------------
 ZSH_BIN="$(command -v zsh)"
 if [ "${SHELL:-}" != "$ZSH_BIN" ]; then

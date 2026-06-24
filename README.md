@@ -31,10 +31,12 @@ When it finishes: **open a new Alacritty window** → it drops you straight into
 | Claude usage widget | `tmux/tmux-claude.sh` | `~/.config/tmux/tmux-claude.sh` |
 | Claude Code statusLine | `tmux/claude-usage-statusline.sh` | `~/.config/tmux/claude-usage-statusline.sh` |
 | Claude Code theme | `.claude/themes/*.json` | `~/.claude/themes/` |
+| Claude Code hooks/statusLine | `.claude/settings.json` | `~/.claude/settings.json` (jq-merged) |
 | Alacritty | `alacritty/alacritty.toml` | `~/.config/alacritty/alacritty.toml` |
+| Hammerspoon (↑/↓ sound) | `hammerspoon/init.lua` | `~/.hammerspoon/init.lua` |
 | zsh | `zsh/.zshrc` | `~/.zshrc` |
 
-`install.sh` also installs: Homebrew, tmux, Alacritty, JetBrainsMono Nerd font, jq,
+`install.sh` also installs: Homebrew, tmux, Alacritty, Hammerspoon, JetBrainsMono Nerd font, jq,
 fswatch (for `watch.sh`), oh-my-zsh + 3 plugins (autosuggestions,
 syntax-highlighting, completions), TPM + tmux plugins (resurrect + continuum),
 the Alacritty theme, and the CLIs `.zshrc` needs: **thefuck**, **python@3.12**,
@@ -60,6 +62,8 @@ possible:
 | `tmux/*.sh` | copied + `chmod +x` → status bar picks it up the next second |
 | `alacritty/alacritty.toml` | copied (placeholder substituted) → Alacritty live-reloads itself |
 | `zsh/.zshrc` | copied → **new** shells only (existing ones: `source ~/.zshrc`) |
+| `hammerspoon/init.lua` | copied → Hammerspoon auto-reloads (built-in `pathwatcher`) |
+| `.claude/settings.json` | jq-merged into `~/.claude/settings.json` (hooks + statusLine) |
 | `.claude/themes/*.json` | copied → re-pick the theme in Claude Code to apply |
 
 Unlike `install.sh`, it does **not** create `.bak` backups on every save — the
@@ -112,6 +116,24 @@ other keys untouched, backed up first).
 > **rate-limit window %** that Claude Code hands to `statusLine`
 > (`rate_limits.five_hour.used_percentage`, `resets_at`). The widget only updates
 > while a Claude Code session is running.
+
+## Sound cues
+
+Two unrelated bits of audio feedback:
+
+- **Claude Code hooks** (`.claude/settings.json` → merged into `~/.claude/settings.json`):
+  a `Stop` hook plays `Glass` when Claude finishes a reply, and a `Notification`
+  hook plays `Pop` when it needs your input/permission. These are scoped to Claude
+  sessions. `install.sh`/`watch.sh` `jq`-merge the repo's `.hooks` into your live
+  settings, leaving `statusLine` and other keys untouched.
+- **Hammerspoon** (`hammerspoon/init.lua` → `~/.hammerspoon/init.lua`): plays `Tink`
+  on every ↑/↓ **while Alacritty is frontmost**. It uses an `eventtap` that passes
+  the key through (no key-repeat break) and skips held-key auto-repeat.
+
+> ⚠️ **Hammerspoon needs Accessibility permission** — open Hammerspoon once and
+> grant it under **System Settings → Privacy & Security → Accessibility**.
+> It can't tell "a Claude session is focused" from "scrolling zsh history", so it
+> beeps on *all* ↑/↓ in Alacritty, not just inside Claude Code.
 
 ## zsh — aliases & prompt
 

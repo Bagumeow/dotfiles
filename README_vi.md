@@ -31,10 +31,12 @@ Sau khi xong: **mở một cửa sổ Alacritty mới** → tự vào tmux.
 | widget usage Claude | `tmux/tmux-claude.sh` | `~/.config/tmux/tmux-claude.sh` |
 | statusLine Claude Code | `tmux/claude-usage-statusline.sh` | `~/.config/tmux/claude-usage-statusline.sh` |
 | theme Claude Code | `.claude/themes/*.json` | `~/.claude/themes/` |
+| hook/statusLine Claude Code | `.claude/settings.json` | `~/.claude/settings.json` (merge jq) |
 | Alacritty | `alacritty/alacritty.toml` | `~/.config/alacritty/alacritty.toml` |
+| Hammerspoon (kêu ↑/↓) | `hammerspoon/init.lua` | `~/.hammerspoon/init.lua` |
 | zsh | `zsh/.zshrc` | `~/.zshrc` |
 
-`install.sh` còn tự cài: Homebrew, tmux, Alacritty, font JetBrainsMono Nerd, jq,
+`install.sh` còn tự cài: Homebrew, tmux, Alacritty, Hammerspoon, font JetBrainsMono Nerd, jq,
 fswatch (cho `watch.sh`), oh-my-zsh + 3 plugin (autosuggestions,
 syntax-highlighting, completions), TPM + plugin tmux (resurrect + continuum),
 theme Alacritty, và các CLI mà `.zshrc` cần: **thefuck**, **python@3.12**,
@@ -59,6 +61,8 @@ gồm cả thay `__TMUX_LAUNCH__` và `chmod +x`) và reload nơi nào được:
 | `tmux/*.sh` | copy + `chmod +x` → status bar nhận ở giây kế tiếp |
 | `alacritty/alacritty.toml` | copy (đã thay placeholder) → Alacritty tự live-reload |
 | `zsh/.zshrc` | copy → chỉ shell **MỚI** nhận (shell đang mở: `source ~/.zshrc`) |
+| `hammerspoon/init.lua` | copy → Hammerspoon tự reload (dùng `pathwatcher` sẵn có) |
+| `.claude/settings.json` | merge jq vào `~/.claude/settings.json` (hook + statusLine) |
 | `.claude/themes/*.json` | copy → chọn lại theme trong Claude Code để áp dụng |
 
 Khác `install.sh`: **không** tạo backup `.bak` mỗi lần lưu — bản cũ đã nằm
@@ -109,6 +113,24 @@ không đụng các key khác; có backup).
 > token của Max/Pro. Thứ chính thống & trung thực nhất là **% cửa sổ rate-limit**
 > mà Claude Code đưa cho `statusLine` (`rate_limits.five_hour.used_percentage`,
 > `resets_at`). Widget chỉ cập nhật khi có session Claude Code đang chạy.
+
+## Âm thanh báo
+
+Hai thứ báo bằng tiếng, không liên quan nhau:
+
+- **Hook Claude Code** (`.claude/settings.json` → merge vào `~/.claude/settings.json`):
+  hook `Stop` kêu `Glass` khi Claude trả lời xong, hook `Notification` kêu `Pop`
+  khi cần mình nhập liệu/cấp quyền. Chỉ áp dụng trong session Claude.
+  `install.sh`/`watch.sh` merge `.hooks` của repo vào settings đang chạy bằng `jq`,
+  giữ nguyên `statusLine` và các key khác.
+- **Hammerspoon** (`hammerspoon/init.lua` → `~/.hammerspoon/init.lua`): kêu `Tink`
+  mỗi khi bấm ↑/↓ **lúc Alacritty đang front**. Dùng `eventtap` cho phím đi qua
+  (không vỡ auto-repeat) và bỏ qua sự kiện giữ phím.
+
+> ⚠️ **Hammerspoon cần quyền Accessibility** — mở Hammerspoon 1 lần rồi bật nó ở
+> **System Settings → Privacy & Security → Accessibility**. Nó không biết "đang
+> focus session Claude" hay "đang cuộn lịch sử zsh", nên sẽ kêu với *mọi* ↑/↓
+> trong Alacritty, không riêng gì Claude Code.
 
 ## zsh — alias & prompt
 
