@@ -13,11 +13,21 @@
 
 -- App sẽ kêu khi bấm ↑/↓. Thêm ["Code"] = true nếu chạy Claude trong terminal
 -- của VS Code (lưu ý: sẽ kêu cả khi bấm ↑/↓ trong editor VS Code).
-local targetApps = { ["Alacritty"] = true }
+local targetApps = { ["Alacritty"] = true, ["Code"] = true }
 
 local arrowKeys = { [126] = true, [125] = true }  -- 126 = Up, 125 = Down
-local tink = hs.sound.getByName("Tink")
-           or hs.sound.getByFile("/System/Library/Sounds/Tink.aiff")
+
+-- Kêu bằng afplay chạy nền: mỗi lần bấm là 1 tiến trình riêng, nên bấm nhanh
+-- nhiều lần vẫn kêu đủ (dùng chung 1 hs.sound sẽ bị nuốt khi đang phát dở).
+-- Giữ tham chiếu task trong `beeps` kẻo bị garbage-collect lúc đang chạy.
+local TINK = "/System/Library/Sounds/Tink.aiff"
+local beeps = {}
+local function beep()
+  local t
+  t = hs.task.new("/usr/bin/afplay", function() beeps[t] = nil end, { TINK })
+  beeps[t] = true
+  t:start()
+end
 
 -- KHÔNG để `local`: eventtap phải là biến toàn cục kẻo Hammerspoon
 -- garbage-collect (mất biến = tap ngừng chạy).
@@ -25,7 +35,7 @@ arrowTap = hs.eventtap.new({ hs.eventtap.event.types.keyDown }, function(e)
   if arrowKeys[e:getKeyCode()]
      and e:getProperty(hs.eventtap.event.properties.keyboardEventAutorepeat) == 0 then
     local app = hs.application.frontmostApplication()
-    if app and targetApps[app:name()] and tink then tink:play() end
+    if app and targetApps[app:name()] then beep() end
   end
   return false  -- không nuốt phím: ↑/↓ vẫn tới terminal/TUI như thường
 end)
