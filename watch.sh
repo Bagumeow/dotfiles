@@ -60,20 +60,27 @@ deploy() {
       cp "$DOTFILES_DIR/zsh/.zshrc" ~/.zshrc
       log ".zshrc -> ~/.zshrc (shell đang mở cần: source ~/.zshrc)"
       ;;
+    "$DOTFILES_DIR"/.claude/themes/*.json)
+      local name; name="$(basename "$1")"
+      [ -f "$DOTFILES_DIR/.claude/themes/$name" ] || return 0  # file vừa bị xoá/đổi tên
+      cp "$DOTFILES_DIR/.claude/themes/$name" ~/.claude/themes/"$name"
+      log "$name -> ~/.claude/themes/$name (chọn lại theme trong Claude Code)"
+      ;;
     *) ;;  # file lạ (swap/tmp của editor, .DS_Store, .bak...) — bỏ qua
   esac
 }
 
 # Sync toàn bộ một lần lúc khởi động cho repo và hệ thống khớp nhau
 log "Sync lần đầu..."
-mkdir -p ~/.config/tmux ~/.config/alacritty
+mkdir -p ~/.config/tmux ~/.config/alacritty ~/.claude/themes
 deploy "$DOTFILES_DIR/tmux/.tmux.conf"
 for s in "$DOTFILES_DIR"/tmux/*.sh; do deploy "$s"; done
 deploy "$DOTFILES_DIR/alacritty/alacritty.toml"
 deploy "$DOTFILES_DIR/zsh/.zshrc"
+for t in "$DOTFILES_DIR"/.claude/themes/*.json; do deploy "$t"; done
 
-log "Đang canh $DOTFILES_DIR (tmux/ alacritty/ zsh/) — Ctrl-C để dừng."
-fswatch "$DOTFILES_DIR/tmux" "$DOTFILES_DIR/alacritty" "$DOTFILES_DIR/zsh" |
+log "Đang canh $DOTFILES_DIR (tmux/ alacritty/ zsh/ .claude/themes/) — Ctrl-C để dừng."
+fswatch "$DOTFILES_DIR/tmux" "$DOTFILES_DIR/alacritty" "$DOTFILES_DIR/zsh" "$DOTFILES_DIR/.claude/themes" |
 while IFS= read -r path; do
   deploy "$path" || warn "deploy lỗi: $path"
 done

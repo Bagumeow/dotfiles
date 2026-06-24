@@ -4,3 +4,6 @@
 
 # rác macOS
 .DS_Store
+
+# Claude Code local settings (permissions theo máy, không commit)
+.claude/settings.local.json

@@ -30,6 +30,7 @@ Sau khi xong: **mở một cửa sổ Alacritty mới** → tự vào tmux.
 | pwd ở status bar | `tmux/tmux-pwd.sh` | `~/.config/tmux/tmux-pwd.sh` |
 | widget usage Claude | `tmux/tmux-claude.sh` | `~/.config/tmux/tmux-claude.sh` |
 | statusLine Claude Code | `tmux/claude-usage-statusline.sh` | `~/.config/tmux/claude-usage-statusline.sh` |
+| theme Claude Code | `.claude/themes/*.json` | `~/.claude/themes/` |
 | Alacritty | `alacritty/alacritty.toml` | `~/.config/alacritty/alacritty.toml` |
 | zsh | `zsh/.zshrc` | `~/.zshrc` |
 
@@ -58,6 +59,7 @@ gồm cả thay `__TMUX_LAUNCH__` và `chmod +x`) và reload nơi nào được:
 | `tmux/*.sh` | copy + `chmod +x` → status bar nhận ở giây kế tiếp |
 | `alacritty/alacritty.toml` | copy (đã thay placeholder) → Alacritty tự live-reload |
 | `zsh/.zshrc` | copy → chỉ shell **MỚI** nhận (shell đang mở: `source ~/.zshrc`) |
+| `.claude/themes/*.json` | copy → chọn lại theme trong Claude Code để áp dụng |
 
 Khác `install.sh`: **không** tạo backup `.bak` mỗi lần lưu — bản cũ đã nằm
 trong git. Cần `fswatch` (`install.sh` tự cài).

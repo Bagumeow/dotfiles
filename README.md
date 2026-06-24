@@ -30,6 +30,7 @@ When it finishes: **open a new Alacritty window** → it drops you straight into
 | pwd in status bar | `tmux/tmux-pwd.sh` | `~/.config/tmux/tmux-pwd.sh` |
 | Claude usage widget | `tmux/tmux-claude.sh` | `~/.config/tmux/tmux-claude.sh` |
 | Claude Code statusLine | `tmux/claude-usage-statusline.sh` | `~/.config/tmux/claude-usage-statusline.sh` |
+| Claude Code theme | `.claude/themes/*.json` | `~/.claude/themes/` |
 | Alacritty | `alacritty/alacritty.toml` | `~/.config/alacritty/alacritty.toml` |
 | zsh | `zsh/.zshrc` | `~/.zshrc` |
 
@@ -59,6 +60,7 @@ possible:
 | `tmux/*.sh` | copied + `chmod +x` → status bar picks it up the next second |
 | `alacritty/alacritty.toml` | copied (placeholder substituted) → Alacritty live-reloads itself |
 | `zsh/.zshrc` | copied → **new** shells only (existing ones: `source ~/.zshrc`) |
+| `.claude/themes/*.json` | copied → re-pick the theme in Claude Code to apply |
 
 Unlike `install.sh`, it does **not** create `.bak` backups on every save — the
 old version is already in git. Requires `fswatch` (installed by `install.sh`).

@@ -127,8 +127,17 @@ if [ -d "$HOME/.claude" ] || command -v claude >/dev/null 2>&1; then
   jq --arg cmd "$HOME/.config/tmux/claude-usage-statusline.sh" \
      '.statusLine = {type:"command", command:$cmd, padding:0}' \
      "$SETTINGS" > "$tmp" && mv "$tmp" "$SETTINGS"
+
+  # Theme Claude Code (.claude/themes/*.json -> ~/.claude/themes/)
+  log "Đặt theme Claude Code..."
+  mkdir -p "$HOME/.claude/themes"
+  for theme in "$DOTFILES_DIR"/.claude/themes/*.json; do
+    [ -e "$theme" ] || continue   # không có theme nào thì bỏ qua
+    backup "$HOME/.claude/themes/$(basename "$theme")"
+    cp "$theme" "$HOME/.claude/themes/"
+  done
 else
-  warn "Không thấy Claude Code (~/.claude) — bỏ qua statusLine."
+  warn "Không thấy Claude Code (~/.claude) — bỏ qua statusLine + theme."
   warn "Widget '5h NN%' ở tmux sẽ ẩn cho tới khi có dữ liệu usage."
 fi
 
