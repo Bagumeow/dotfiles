@@ -33,7 +33,7 @@ Sau khi xong: **mở một cửa sổ Alacritty mới** → tự vào tmux.
 | theme Claude Code | `.claude/themes/*.json` | `~/.claude/themes/` |
 | hook/statusLine Claude Code | `.claude/settings.json` | `~/.claude/settings.json` (merge jq) |
 | Alacritty | `alacritty/alacritty.toml` | `~/.config/alacritty/alacritty.toml` |
-| Hammerspoon (kêu ↑/↓) | `hammerspoon/init.lua` | `~/.hammerspoon/init.lua` |
+| Hammerspoon (kêu phím mũi tên) | `hammerspoon/init.lua` | `~/.hammerspoon/init.lua` |
 | zsh | `zsh/.zshrc` | `~/.zshrc` |
 
 `install.sh` còn tự cài: Homebrew, tmux, Alacritty, Hammerspoon, font JetBrainsMono Nerd, jq,
@@ -124,8 +124,10 @@ Hai thứ báo bằng tiếng, không liên quan nhau:
   `install.sh`/`watch.sh` merge `.hooks` của repo vào settings đang chạy bằng `jq`,
   giữ nguyên `statusLine` và các key khác.
 - **Hammerspoon** (`hammerspoon/init.lua` → `~/.hammerspoon/init.lua`): kêu `Tink`
-  mỗi khi bấm ↑/↓ **lúc Alacritty đang front**. Dùng `eventtap` cho phím đi qua
-  (không vỡ auto-repeat) và bỏ qua sự kiện giữ phím.
+  mỗi khi bấm **phím mũi tên** (↑/↓/←/→) lúc app đích đang front (mặc định Alacritty
+  và VS Code — sửa `targetApps`). Dùng `eventtap` cho phím đi qua (không vỡ
+  auto-repeat), bỏ qua sự kiện giữ phím, và chạy `afplay` nền mỗi lần bấm nên bấm
+  nhanh vẫn kêu đủ.
 
 > ⚠️ **Hammerspoon cần quyền Accessibility** — mở Hammerspoon 1 lần rồi bật nó ở
 > **System Settings → Privacy & Security → Accessibility**. Nó không biết "đang

@@ -1,5 +1,5 @@
 -- ---------------------------------------------------------------------------
--- Hammerspoon init — kêu "Tink" mỗi khi bấm ↑/↓ lúc app terminal đang front
+-- Hammerspoon init — kêu "Tink" mỗi khi bấm phím mũi tên (↑/↓/←/→) lúc app front
 -- (frontmost). Dùng eventtap và TRẢ VỀ false (không nuốt phím) nên terminal/TUI
 -- vẫn nhận ↑/↓ y như cũ: không vỡ auto-repeat, không mất modifier.
 --
@@ -11,11 +11,12 @@
 --   System Settings → Privacy & Security → Accessibility → bật Hammerspoon
 -- ---------------------------------------------------------------------------
 
--- App sẽ kêu khi bấm ↑/↓. Thêm ["Code"] = true nếu chạy Claude trong terminal
--- của VS Code (lưu ý: sẽ kêu cả khi bấm ↑/↓ trong editor VS Code).
+-- App sẽ kêu khi bấm phím mũi tên. Thêm ["Code"] = true nếu chạy Claude trong
+-- terminal VS Code (lưu ý: kêu cả khi bấm mũi tên trong editor VS Code).
 local targetApps = { ["Alacritty"] = true, ["Code"] = true }
 
-local arrowKeys = { [126] = true, [125] = true }  -- 126 = Up, 125 = Down
+-- 126=Up, 125=Down, 123=Left, 124=Right
+local arrowKeys = { [126] = true, [125] = true, [123] = true, [124] = true }
 
 -- Kêu bằng afplay chạy nền: mỗi lần bấm là 1 tiến trình riêng, nên bấm nhanh
 -- nhiều lần vẫn kêu đủ (dùng chung 1 hs.sound sẽ bị nuốt khi đang phát dở).

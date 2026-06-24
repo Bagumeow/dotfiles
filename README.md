@@ -33,7 +33,7 @@ When it finishes: **open a new Alacritty window** → it drops you straight into
 | Claude Code theme | `.claude/themes/*.json` | `~/.claude/themes/` |
 | Claude Code hooks/statusLine | `.claude/settings.json` | `~/.claude/settings.json` (jq-merged) |
 | Alacritty | `alacritty/alacritty.toml` | `~/.config/alacritty/alacritty.toml` |
-| Hammerspoon (↑/↓ sound) | `hammerspoon/init.lua` | `~/.hammerspoon/init.lua` |
+| Hammerspoon (arrow-key sound) | `hammerspoon/init.lua` | `~/.hammerspoon/init.lua` |
 | zsh | `zsh/.zshrc` | `~/.zshrc` |
 
 `install.sh` also installs: Homebrew, tmux, Alacritty, Hammerspoon, JetBrainsMono Nerd font, jq,
@@ -127,8 +127,10 @@ Two unrelated bits of audio feedback:
   sessions. `install.sh`/`watch.sh` `jq`-merge the repo's `.hooks` into your live
   settings, leaving `statusLine` and other keys untouched.
 - **Hammerspoon** (`hammerspoon/init.lua` → `~/.hammerspoon/init.lua`): plays `Tink`
-  on every ↑/↓ **while Alacritty is frontmost**. It uses an `eventtap` that passes
-  the key through (no key-repeat break) and skips held-key auto-repeat.
+  on every **arrow key** (↑/↓/←/→) while a target app is frontmost (Alacritty and
+  VS Code by default — edit `targetApps`). It uses an `eventtap` that passes the key
+  through (no key-repeat break), skips held-key auto-repeat, and fires a detached
+  `afplay` per press so fast taps each sound.
 
 > ⚠️ **Hammerspoon needs Accessibility permission** — open Hammerspoon once and
 > grant it under **System Settings → Privacy & Security → Accessibility**.
