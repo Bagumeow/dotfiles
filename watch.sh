@@ -10,6 +10,8 @@
 #   - tmux/*.sh                -> ~/.config/tmux/ (status bar nhận ở giây kế tiếp)
 #   - alacritty/alacritty.toml -> Alacritty tự live-reload config
 #   - zsh/.zshrc               -> chỉ shell MỚI nhận (shell đang mở: `source ~/.zshrc`)
+#   - .claude/settings.json    -> merge hook + statusLine vào ~/.claude/settings.json
+#   - .claude/themes/*.json    -> ~/.claude/themes/ (chọn lại theme trong Claude Code)
 #
 # Khác install.sh: KHÔNG tạo backup .bak mỗi lần lưu (tránh rác) — bản cũ đã
 # nằm trong git, repo là source of truth.
@@ -60,6 +62,21 @@ deploy() {
       cp "$DOTFILES_DIR/zsh/.zshrc" ~/.zshrc
       log ".zshrc -> ~/.zshrc (shell đang mở cần: source ~/.zshrc)"
       ;;
+    "$DOTFILES_DIR"/.claude/settings.json)
+      [ -f "$DOTFILES_DIR/.claude/settings.json" ] || return 0  # file vừa bị xoá/đổi tên
+      mkdir -p ~/.claude
+      [ -f ~/.claude/settings.json ] || echo '{}' > ~/.claude/settings.json
+      local tmp; tmp="$(mktemp)"
+      # Merge .hooks của repo vào settings đang chạy, giữ statusLine + key khác
+      if jq -s --arg cmd "$HOME/.config/tmux/claude-usage-statusline.sh" \
+           '.[0] * {hooks: .[1].hooks} | .statusLine = {type:"command", command:$cmd, padding:0}' \
+           ~/.claude/settings.json "$DOTFILES_DIR/.claude/settings.json" > "$tmp"; then
+        mv "$tmp" ~/.claude/settings.json
+        log "settings.json -> ~/.claude/settings.json (merge hook + statusLine)"
+      else
+        rm -f "$tmp"; warn "jq merge lỗi — kiểm tra .claude/settings.json"
+      fi
+      ;;
     "$DOTFILES_DIR"/.claude/themes/*.json)
       local name; name="$(basename "$1")"
       [ -f "$DOTFILES_DIR/.claude/themes/$name" ] || return 0  # file vừa bị xoá/đổi tên
@@ -77,10 +94,11 @@ deploy "$DOTFILES_DIR/tmux/.tmux.conf"
 for s in "$DOTFILES_DIR"/tmux/*.sh; do deploy "$s"; done
 deploy "$DOTFILES_DIR/alacritty/alacritty.toml"
 deploy "$DOTFILES_DIR/zsh/.zshrc"
+deploy "$DOTFILES_DIR/.claude/settings.json"
 for t in "$DOTFILES_DIR"/.claude/themes/*.json; do deploy "$t"; done
 
-log "Đang canh $DOTFILES_DIR (tmux/ alacritty/ zsh/ .claude/themes/) — Ctrl-C để dừng."
-fswatch "$DOTFILES_DIR/tmux" "$DOTFILES_DIR/alacritty" "$DOTFILES_DIR/zsh" "$DOTFILES_DIR/.claude/themes" |
+log "Đang canh $DOTFILES_DIR (tmux/ alacritty/ zsh/ .claude/) — Ctrl-C để dừng."
+fswatch "$DOTFILES_DIR/tmux" "$DOTFILES_DIR/alacritty" "$DOTFILES_DIR/zsh" "$DOTFILES_DIR/.claude" |
 while IFS= read -r path; do
   deploy "$path" || warn "deploy lỗi: $path"
 done

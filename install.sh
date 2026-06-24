@@ -114,19 +114,25 @@ clone_or_pull https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 ~/.tmux/plugins/tpm/bin/install_plugins || warn "install_plugins lỗi (chạy lại prefix + I trong tmux)"
 
 # ---------------------------------------------------------------------------
-# 6) Claude Code statusLine -> cầu nối % rate-limit ra tmux
-#    (widget "5h NN%" ở status bar đọc cache do statusLine ghi)
+# 6) Claude Code statusLine + hook -> cầu nối % rate-limit ra tmux + âm thanh
+#    - statusLine: widget "5h NN%" ở status bar đọc cache do statusLine ghi
+#    - hook (Stop/Notification...): lấy từ .claude/settings.json của repo, vd
+#      kêu âm thanh khi Claude trả lời xong / cần mình nhập liệu (afplay)
 # ---------------------------------------------------------------------------
 if [ -d "$HOME/.claude" ] || command -v claude >/dev/null 2>&1; then
-  log "Cấu hình statusLine của Claude Code..."
+  log "Cấu hình statusLine + hook của Claude Code..."
   mkdir -p "$HOME/.claude"
   SETTINGS="$HOME/.claude/settings.json"
+  REPO_SETTINGS="$DOTFILES_DIR/.claude/settings.json"
   [ -f "$SETTINGS" ] || echo '{}' > "$SETTINGS"
   cp "$SETTINGS" "$SETTINGS.bak.$(date +%Y%m%d%H%M%S)"
   tmp="$(mktemp)"
-  jq --arg cmd "$HOME/.config/tmux/claude-usage-statusline.sh" \
-     '.statusLine = {type:"command", command:$cmd, padding:0}' \
-     "$SETTINGS" > "$tmp" && mv "$tmp" "$SETTINGS"
+  # Merge .hooks của repo (Stop/Notification/PreToolUse...) vào settings đang
+  # chạy, rồi gắn statusLine (đường dẫn tính theo $HOME, không hardcode user).
+  # Các key khác của settings hiện tại được giữ nguyên.
+  jq -s --arg cmd "$HOME/.config/tmux/claude-usage-statusline.sh" \
+     '.[0] * {hooks: .[1].hooks} | .statusLine = {type:"command", command:$cmd, padding:0}' \
+     "$SETTINGS" "$REPO_SETTINGS" > "$tmp" && mv "$tmp" "$SETTINGS"
 
   # Theme Claude Code (.claude/themes/*.json -> ~/.claude/themes/)
   log "Đặt theme Claude Code..."
