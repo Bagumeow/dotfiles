@@ -13,7 +13,7 @@
 
 -- App sẽ kêu khi bấm phím mũi tên. Thêm ["Code"] = true nếu chạy Claude trong
 -- terminal VS Code (lưu ý: kêu cả khi bấm mũi tên trong editor VS Code).
-local targetApps = { ["Alacritty"] = true, ["Code"] = true }
+local targetApps = { ["Alacritty"] = true}
 
 -- 126=Up, 125=Down, 123=Left, 124=Right
 local arrowKeys = { [126] = true, [125] = true, [123] = true, [124] = true }
