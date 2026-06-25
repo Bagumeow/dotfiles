@@ -35,6 +35,17 @@
           }
         ]
       }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay ~/dotfiles/audio/gta_sa_effect_3.mp3"
+          }
+        ]
+      }
     ]
   },
   "statusLine": {
