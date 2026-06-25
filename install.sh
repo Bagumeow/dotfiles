@@ -88,13 +88,18 @@ sed "s|__TMUX_LAUNCH__|$HOME/.config/tmux/tmux-launch.sh|g" \
 clone_or_pull https://github.com/alacritty/alacritty-theme ~/.config/alacritty/themes
 
 # ---------------------------------------------------------------------------
-# 4) Hammerspoon — kêu "Tink" khi bấm ↑/↓ lúc Alacritty đang front
+# 4) Hammerspoon — kêu một tiếng khi bấm phím mũi tên lúc app terminal đang front
 #    (cần cấp quyền Accessibility cho Hammerspoon, làm tay 1 lần)
 # ---------------------------------------------------------------------------
 log "Đặt config Hammerspoon..."
 mkdir -p ~/.hammerspoon
 backup ~/.hammerspoon/init.lua
 cp "$DOTFILES_DIR/hammerspoon/init.lua" ~/.hammerspoon/init.lua
+# Tiếng cho phím mũi tên (init.lua đọc ~/.hammerspoon/gta_sa_effect_4.mp3)
+for snd in "$DOTFILES_DIR"/audio/*.mp3; do
+  [ -e "$snd" ] || continue
+  cp "$snd" ~/.hammerspoon/
+done
 warn "Cấp quyền cho Hammerspoon: System Settings → Privacy & Security →"
 warn "Accessibility → bật Hammerspoon (mở app Hammerspoon 1 lần để được hỏi)."
 

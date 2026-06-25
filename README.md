@@ -34,6 +34,7 @@ When it finishes: **open a new Alacritty window** → it drops you straight into
 | Claude Code hooks/statusLine | `.claude/settings.json` | `~/.claude/settings.json` (jq-merged) |
 | Alacritty | `alacritty/alacritty.toml` | `~/.config/alacritty/alacritty.toml` |
 | Hammerspoon (arrow-key sound) | `hammerspoon/init.lua` | `~/.hammerspoon/init.lua` |
+| Arrow-key sound files | `audio/*.mp3` | `~/.hammerspoon/` |
 | zsh | `zsh/.zshrc` | `~/.zshrc` |
 
 `install.sh` also installs: Homebrew, tmux, Alacritty, Hammerspoon, JetBrainsMono Nerd font, jq,
@@ -63,6 +64,7 @@ possible:
 | `alacritty/alacritty.toml` | copied (placeholder substituted) → Alacritty live-reloads itself |
 | `zsh/.zshrc` | copied → **new** shells only (existing ones: `source ~/.zshrc`) |
 | `hammerspoon/init.lua` | copied → Hammerspoon auto-reloads (built-in `pathwatcher`) |
+| `audio/*.mp3` | copied → used on the next keypress (no reload needed) |
 | `.claude/settings.json` | jq-merged into `~/.claude/settings.json` (hooks + statusLine) |
 | `.claude/themes/*.json` | copied → re-pick the theme in Claude Code to apply |
 
@@ -126,11 +128,13 @@ Two unrelated bits of audio feedback:
   hook plays `Pop` when it needs your input/permission. These are scoped to Claude
   sessions. `install.sh`/`watch.sh` `jq`-merge the repo's `.hooks` into your live
   settings, leaving `statusLine` and other keys untouched.
-- **Hammerspoon** (`hammerspoon/init.lua` → `~/.hammerspoon/init.lua`): plays `Tink`
-  on every **arrow key** (↑/↓/←/→) while a target app is frontmost (Alacritty and
-  VS Code by default — edit `targetApps`). It uses an `eventtap` that passes the key
-  through (no key-repeat break), skips held-key auto-repeat, and fires a detached
-  `afplay` per press so fast taps each sound.
+- **Hammerspoon** (`hammerspoon/init.lua` → `~/.hammerspoon/init.lua`): plays a short
+  sound (`audio/gta_sa_effect_4.mp3` → `~/.hammerspoon/gta_sa_effect_4.mp3`; falls back to `Tink` if
+  missing — point `init.lua` at another `audio/*.mp3` to change it) on every **arrow
+  key** (↑/↓/←/→) while a target app is frontmost (Alacritty and VS Code by default —
+  edit `targetApps`). It uses an `eventtap` that passes the key through (no key-repeat
+  break), skips held-key auto-repeat, and fires a detached `afplay` per press so fast
+  taps each sound.
 
 > ⚠️ **Hammerspoon needs Accessibility permission** — open Hammerspoon once and
 > grant it under **System Settings → Privacy & Security → Accessibility**.

@@ -34,6 +34,7 @@ Sau khi xong: **mở một cửa sổ Alacritty mới** → tự vào tmux.
 | hook/statusLine Claude Code | `.claude/settings.json` | `~/.claude/settings.json` (merge jq) |
 | Alacritty | `alacritty/alacritty.toml` | `~/.config/alacritty/alacritty.toml` |
 | Hammerspoon (kêu phím mũi tên) | `hammerspoon/init.lua` | `~/.hammerspoon/init.lua` |
+| File tiếng phím mũi tên | `audio/*.mp3` | `~/.hammerspoon/` |
 | zsh | `zsh/.zshrc` | `~/.zshrc` |
 
 `install.sh` còn tự cài: Homebrew, tmux, Alacritty, Hammerspoon, font JetBrainsMono Nerd, jq,
@@ -62,6 +63,7 @@ gồm cả thay `__TMUX_LAUNCH__` và `chmod +x`) và reload nơi nào được:
 | `alacritty/alacritty.toml` | copy (đã thay placeholder) → Alacritty tự live-reload |
 | `zsh/.zshrc` | copy → chỉ shell **MỚI** nhận (shell đang mở: `source ~/.zshrc`) |
 | `hammerspoon/init.lua` | copy → Hammerspoon tự reload (dùng `pathwatcher` sẵn có) |
+| `audio/*.mp3` | copy → dùng ngay ở lần bấm kế tiếp (không cần reload) |
 | `.claude/settings.json` | merge jq vào `~/.claude/settings.json` (hook + statusLine) |
 | `.claude/themes/*.json` | copy → chọn lại theme trong Claude Code để áp dụng |
 
@@ -123,11 +125,12 @@ Hai thứ báo bằng tiếng, không liên quan nhau:
   khi cần mình nhập liệu/cấp quyền. Chỉ áp dụng trong session Claude.
   `install.sh`/`watch.sh` merge `.hooks` của repo vào settings đang chạy bằng `jq`,
   giữ nguyên `statusLine` và các key khác.
-- **Hammerspoon** (`hammerspoon/init.lua` → `~/.hammerspoon/init.lua`): kêu `Tink`
-  mỗi khi bấm **phím mũi tên** (↑/↓/←/→) lúc app đích đang front (mặc định Alacritty
-  và VS Code — sửa `targetApps`). Dùng `eventtap` cho phím đi qua (không vỡ
-  auto-repeat), bỏ qua sự kiện giữ phím, và chạy `afplay` nền mỗi lần bấm nên bấm
-  nhanh vẫn kêu đủ.
+- **Hammerspoon** (`hammerspoon/init.lua` → `~/.hammerspoon/init.lua`): kêu một tiếng
+  ngắn (`audio/gta_sa_effect_4.mp3` → `~/.hammerspoon/`; thiếu file thì quay về `Tink`
+  — trỏ `init.lua` sang `audio/*.mp3` khác để đổi tiếng) mỗi khi bấm **phím mũi tên**
+  (↑/↓/←/→) lúc app đích đang front (mặc định Alacritty và VS Code — sửa `targetApps`).
+  Dùng `eventtap` cho phím đi qua (không vỡ auto-repeat), bỏ qua sự kiện giữ phím, và
+  chạy `afplay` nền mỗi lần bấm nên bấm nhanh vẫn kêu đủ.
 
 > ⚠️ **Hammerspoon cần quyền Accessibility** — mở Hammerspoon 1 lần rồi bật nó ở
 > **System Settings → Privacy & Security → Accessibility**. Nó không biết "đang

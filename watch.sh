@@ -11,6 +11,7 @@
 #   - alacritty/alacritty.toml -> Alacritty tự live-reload config
 #   - zsh/.zshrc               -> chỉ shell MỚI nhận (shell đang mở: `source ~/.zshrc`)
 #   - hammerspoon/init.lua     -> ~/.hammerspoon/init.lua (Hammerspoon tự reload)
+#   - audio/*.mp3              -> ~/.hammerspoon/ (tiếng phím mũi tên, dùng ngay)
 #   - .claude/settings.json    -> merge hook + statusLine vào ~/.claude/settings.json
 #   - .claude/themes/*.json    -> ~/.claude/themes/ (chọn lại theme trong Claude Code)
 #
@@ -69,6 +70,13 @@ deploy() {
       cp "$DOTFILES_DIR/hammerspoon/init.lua" ~/.hammerspoon/init.lua
       log "init.lua -> ~/.hammerspoon/init.lua (Hammerspoon tự reload)"
       ;;
+    "$DOTFILES_DIR"/audio/*.mp3)
+      local name; name="$(basename "$1")"
+      [ -f "$DOTFILES_DIR/audio/$name" ] || return 0  # file vừa bị xoá/đổi tên
+      mkdir -p ~/.hammerspoon
+      cp "$DOTFILES_DIR/audio/$name" ~/.hammerspoon/"$name"
+      log "$name -> ~/.hammerspoon/$name (dùng ngay lần bấm sau)"
+      ;;
     "$DOTFILES_DIR"/.claude/settings.json)
       [ -f "$DOTFILES_DIR/.claude/settings.json" ] || return 0  # file vừa bị xoá/đổi tên
       mkdir -p ~/.claude
@@ -102,11 +110,12 @@ for s in "$DOTFILES_DIR"/tmux/*.sh; do deploy "$s"; done
 deploy "$DOTFILES_DIR/alacritty/alacritty.toml"
 deploy "$DOTFILES_DIR/zsh/.zshrc"
 deploy "$DOTFILES_DIR/hammerspoon/init.lua"
+for snd in "$DOTFILES_DIR"/audio/*.mp3; do deploy "$snd"; done
 deploy "$DOTFILES_DIR/.claude/settings.json"
 for t in "$DOTFILES_DIR"/.claude/themes/*.json; do deploy "$t"; done
 
-log "Đang canh $DOTFILES_DIR (tmux/ alacritty/ zsh/ hammerspoon/ .claude/) — Ctrl-C để dừng."
-fswatch "$DOTFILES_DIR/tmux" "$DOTFILES_DIR/alacritty" "$DOTFILES_DIR/zsh" "$DOTFILES_DIR/hammerspoon" "$DOTFILES_DIR/.claude" |
+log "Đang canh $DOTFILES_DIR (tmux/ alacritty/ zsh/ hammerspoon/ audio/ .claude/) — Ctrl-C để dừng."
+fswatch "$DOTFILES_DIR/tmux" "$DOTFILES_DIR/alacritty" "$DOTFILES_DIR/zsh" "$DOTFILES_DIR/hammerspoon" "$DOTFILES_DIR/audio" "$DOTFILES_DIR/.claude" |
 while IFS= read -r path; do
   deploy "$path" || warn "deploy lỗi: $path"
 done
