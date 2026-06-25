@@ -20,7 +20,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "afplay /System/Library/Sounds/Glass.aiff"
+            "command": "afplay ~/dotfiles/audio/gta_sa_effect_1.mp3"
           }
         ]
       }
@@ -31,7 +31,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "afplay /System/Library/Sounds/Pop.aiff"
+            "command": "afplay ~/dotfiles/audio/gta_sa_effect_2.mp3"
           }
         ]
       }
@@ -39,7 +39,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "/Users/nghiale/.config/tmux/claude-usage-statusline.sh",
+    "command": "~/.config/tmux/claude-usage-statusline.sh",
     "padding": 0
   },
   "effortLevel": "xhigh",
