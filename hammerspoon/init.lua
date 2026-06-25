@@ -21,14 +21,28 @@ local arrowKeys = { [126] = true, [125] = true, [123] = true, [124] = true }
 -- Kêu bằng afplay chạy nền: mỗi lần bấm là 1 tiến trình riêng, nên bấm nhanh
 -- nhiều lần vẫn kêu đủ (dùng chung 1 hs.sound sẽ bị nuốt khi đang phát dở).
 -- Giữ tham chiếu task trong `beeps` kẻo bị garbage-collect lúc đang chạy.
--- File âm thanh deploy từ repo audio/ sang ~/.hammerspoon/. Đổi "gta_sa_effect_4" thành
--- gta_sa_effect_1..3 để đổi tiếng. Thiếu file thì quay về Tink của hệ thống.
+
+-- [RANDOM] Gom mọi *.mp3 trong ~/.hammerspoon (deploy từ audio/) -> mỗi lần bấm
+-- chọn ngẫu nhiên 1 tiếng. Comment cả block SOUNDS này nếu muốn dùng 1 file cố
+-- định ở dưới. (Thêm file mới: chạy ./install.sh hoặc reload Hammerspoon.)
+
+---
+--- local SOUNDS = {}
+--- for f in hs.fs.dir(hs.configdir) do
+---   if f:sub(-4):lower() == ".mp3" then SOUNDS[#SOUNDS + 1] = hs.configdir .. "/" .. f end
+--- end
+--- math.randomseed(os.time())
+---
+-- [CỐ ĐỊNH] 1 file. Comment dòng SOUND này nếu đang dùng random ở trên.
 local SOUND = hs.configdir .. "/gta_sa_effect_4.mp3"
-if not hs.fs.attributes(SOUND) then SOUND = "/System/Library/Sounds/Tink.aiff" end
+
 local beeps = {}
 local function beep()
+  -- Có SOUNDS (random) thì ưu tiên; không thì dùng SOUND cố định; cuối là Tink.
+  local file = (SOUNDS and #SOUNDS > 0) and SOUNDS[math.random(#SOUNDS)]
+            or SOUND or "/System/Library/Sounds/Tink.aiff"
   local t
-  t = hs.task.new("/usr/bin/afplay", function() beeps[t] = nil end, { SOUND })
+  t = hs.task.new("/usr/bin/afplay", function() beeps[t] = nil end, { file })
   beeps[t] = true
   t:start()
 end
