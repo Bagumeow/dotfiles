@@ -36,6 +36,17 @@
         ]
       }
     ],
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "nohup afplay ~/dotfiles/audio/game_start_effect.mp3 >/dev/null 2>&1 &"
+          }
+        ]
+      }
+    ],
     "SessionEnd": [
       {
         "matcher": "",
