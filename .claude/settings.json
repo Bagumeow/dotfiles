@@ -42,7 +42,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "afplay ~/dotfiles/audio/gta_sa_effect_3.mp3"
+            "command": "nohup afplay ~/dotfiles/audio/gta_sa_mission_success.mp3 >/dev/null 2>&1 &"
           }
         ]
       }
