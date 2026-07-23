@@ -1,0 +1,178 @@
+#!/usr/bin/env bash
+# ---------------------------------------------------------------------------
+# dotfiles installer — tmux + Alacritty + zsh (oh-my-zsh)
+#
+# Chạy trên một máy Mac mới:
+#   git clone <repo-url> ~/dotfiles && cd ~/dotfiles && ./install.sh
+#
+# Ghi đè TẤT CẢ config liên quan (kể cả khi máy đã có sẵn). Bản cũ được
+# backup thành *.bak.<timestamp> trước khi ghi đè. Chạy lại nhiều lần an toàn.
+# ---------------------------------------------------------------------------
+set -euo pipefail
+
+DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+log()  { printf '\033[1;32m==>\033[0m %s\n' "$*"; }
+warn() { printf '\033[1;33m[!]\033[0m %s\n' "$*"; }
+
+[ "$(uname -s)" = "Darwin" ] || { echo "Script này chỉ dành cho macOS."; exit 1; }
+
+# Backup file/dir nếu đang tồn tại (giữ lại bản cũ, không xoá trắng)
+backup() {
+  if [ -e "$1" ] || [ -L "$1" ]; then
+    local b="$1.bak.$(date +%Y%m%d%H%M%S)"
+    mv "$1" "$b"
+    warn "đã backup $1 -> $b"
+  fi
+}
+
+# Clone mới hoặc cập nhật repo git có sẵn
+clone_or_pull() { # $1 url, $2 dest
+  if [ -d "$2/.git" ]; then
+    git -C "$2" pull --ff-only || warn "không pull được $2 (bỏ qua)"
+  else
+    rm -rf "$2"
+    git clone --depth=1 "$1" "$2"
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# 1) Homebrew + packages
+# ---------------------------------------------------------------------------
+if ! command -v brew >/dev/null 2>&1; then
+  log "Cài Homebrew..."
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+fi
+# Nạp brew vào PATH cho cả Apple Silicon (/opt/homebrew) lẫn Intel (/usr/local)
+if [ -x /opt/homebrew/bin/brew ]; then eval "$(/opt/homebrew/bin/brew shellenv)";
+elif [ -x /usr/local/bin/brew ]; then eval "$(/usr/local/bin/brew shellenv)"; fi
+
+log "Cài tmux, Alacritty, font Nerd, jq + CLI mà .zshrc cần..."
+brew list jq              >/dev/null 2>&1 || brew install jq
+brew list tmux            >/dev/null 2>&1 || brew install tmux
+brew list fswatch         >/dev/null 2>&1 || brew install fswatch     # watch.sh (live reload) cần
+# CLI mà .zshrc tham chiếu (alias + prompt + thefuck). Dùng `command -v`
+# để khỏi cài lại nếu đã có sẵn ngoài Homebrew.
+command -v thefuck        >/dev/null 2>&1 || brew install thefuck     # eval $(thefuck --alias)
+command -v python3.12     >/dev/null 2>&1 || brew install python@3.12 # alias python/pip
+command -v kubectl        >/dev/null 2>&1 || brew install kubectl     # alias k/kube/po/svc...
+command -v kubens         >/dev/null 2>&1 || brew install kubectx     # alias kns + namespace ở prompt
+brew list --cask alacritty                  >/dev/null 2>&1 || brew install --cask alacritty
+brew list --cask font-jetbrains-mono-nerd-font >/dev/null 2>&1 || brew install --cask font-jetbrains-mono-nerd-font
+brew list --cask hammerspoon                >/dev/null 2>&1 || brew install --cask hammerspoon  # kêu ↑/↓ trong Alacritty
+
+# ---------------------------------------------------------------------------
+# 2) tmux config + scripts
+# ---------------------------------------------------------------------------
+log "Đặt config tmux..."
+mkdir -p ~/.config/tmux
+backup ~/.tmux.conf
+cp "$DOTFILES_DIR/tmux/.tmux.conf"      ~/.tmux.conf
+cp "$DOTFILES_DIR/tmux/kamehameha.sh"   ~/.config/tmux/kamehameha.sh
+cp "$DOTFILES_DIR/tmux/tmux-launch.sh"  ~/.config/tmux/tmux-launch.sh
+cp "$DOTFILES_DIR/tmux/tmux-pwd.sh"     ~/.config/tmux/tmux-pwd.sh
+cp "$DOTFILES_DIR/tmux/tmux-claude.sh"  ~/.config/tmux/tmux-claude.sh
+cp "$DOTFILES_DIR/tmux/claude-usage-statusline.sh" ~/.config/tmux/claude-usage-statusline.sh
+chmod +x ~/.config/tmux/kamehameha.sh ~/.config/tmux/tmux-launch.sh ~/.config/tmux/tmux-pwd.sh \
+         ~/.config/tmux/tmux-claude.sh ~/.config/tmux/claude-usage-statusline.sh
+
+# ---------------------------------------------------------------------------
+# 3) Alacritty config (thay placeholder bằng đường dẫn launcher thật)
+# ---------------------------------------------------------------------------
+log "Đặt config Alacritty..."
+mkdir -p ~/.config/alacritty
+backup ~/.config/alacritty/alacritty.toml
+sed "s|__TMUX_LAUNCH__|$HOME/.config/tmux/tmux-launch.sh|g" \
+  "$DOTFILES_DIR/alacritty/alacritty.toml" > ~/.config/alacritty/alacritty.toml
+# Theme mà alacritty.toml import (themes/themes/terminal_app.toml)
+clone_or_pull https://github.com/alacritty/alacritty-theme ~/.config/alacritty/themes
+
+# ---------------------------------------------------------------------------
+# 4) Hammerspoon — kêu một tiếng khi bấm phím mũi tên lúc app terminal đang front
+#    (cần cấp quyền Accessibility cho Hammerspoon, làm tay 1 lần)
+# ---------------------------------------------------------------------------
+log "Đặt config Hammerspoon..."
+mkdir -p ~/.hammerspoon
+backup ~/.hammerspoon/init.lua
+cp "$DOTFILES_DIR/hammerspoon/init.lua" ~/.hammerspoon/init.lua
+# Tiếng cho phím mũi tên (init.lua đọc ~/.hammerspoon/gta_sa_effect_4.mp3)
+for snd in "$DOTFILES_DIR"/audio/*.mp3; do
+  [ -e "$snd" ] || continue
+  cp "$snd" ~/.hammerspoon/
+done
+warn "Cấp quyền cho Hammerspoon: System Settings → Privacy & Security →"
+warn "Accessibility → bật Hammerspoon (mở app Hammerspoon 1 lần để được hỏi)."
+
+# ---------------------------------------------------------------------------
+# 5) oh-my-zsh + plugins + .zshrc
+# ---------------------------------------------------------------------------
+export ZSH="${ZSH:-$HOME/.oh-my-zsh}"
+if [ ! -d "$ZSH" ]; then
+  log "Cài oh-my-zsh..."
+  RUNZSH=no KEEP_ZSHRC=yes CHSH=no \
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+fi
+
+ZSH_CUSTOM="${ZSH_CUSTOM:-$ZSH/custom}"
+log "Cài plugin zsh (autosuggestions, syntax-highlighting, completions)..."
+clone_or_pull https://github.com/zsh-users/zsh-autosuggestions     "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
+clone_or_pull https://github.com/zsh-users/zsh-syntax-highlighting "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
+clone_or_pull https://github.com/zsh-users/zsh-completions         "$ZSH_CUSTOM/plugins/zsh-completions"
+
+log "Đặt .zshrc..."
+backup ~/.zshrc
+cp "$DOTFILES_DIR/zsh/.zshrc" ~/.zshrc
+
+# ---------------------------------------------------------------------------
+# 6) TPM + plugin tmux (resurrect + continuum) — cài headless
+# ---------------------------------------------------------------------------
+log "Cài TPM + plugin tmux..."
+clone_or_pull https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+~/.tmux/plugins/tpm/bin/install_plugins || warn "install_plugins lỗi (chạy lại prefix + I trong tmux)"
+
+# ---------------------------------------------------------------------------
+# 7) Claude Code statusLine + hook -> cầu nối % rate-limit ra tmux + âm thanh
+#    - statusLine: widget "5h NN%" ở status bar đọc cache do statusLine ghi
+#    - hook (Stop/Notification...): lấy từ .claude/settings.json của repo, vd
+#      kêu âm thanh khi Claude trả lời xong / cần mình nhập liệu (afplay)
+# ---------------------------------------------------------------------------
+if [ -d "$HOME/.claude" ] || command -v claude >/dev/null 2>&1; then
+  log "Cấu hình statusLine + hook của Claude Code..."
+  mkdir -p "$HOME/.claude"
+  SETTINGS="$HOME/.claude/settings.json"
+  REPO_SETTINGS="$DOTFILES_DIR/.claude/settings.json"
+  [ -f "$SETTINGS" ] || echo '{}' > "$SETTINGS"
+  cp "$SETTINGS" "$SETTINGS.bak.$(date +%Y%m%d%H%M%S)"
+  tmp="$(mktemp)"
+  # Merge .hooks của repo (Stop/Notification/PreToolUse...) vào settings đang
+  # chạy, rồi gắn statusLine (đường dẫn tính theo $HOME, không hardcode user).
+  # Các key khác của settings hiện tại được giữ nguyên.
+  jq -s --arg cmd "$HOME/.config/tmux/claude-usage-statusline.sh" \
+     '.[0] * {hooks: .[1].hooks} | .statusLine = {type:"command", command:$cmd, padding:0}' \
+     "$SETTINGS" "$REPO_SETTINGS" > "$tmp" && mv "$tmp" "$SETTINGS"
+
+  # Theme Claude Code (.claude/themes/*.json -> ~/.claude/themes/)
+  log "Đặt theme Claude Code..."
+  mkdir -p "$HOME/.claude/themes"
+  for theme in "$DOTFILES_DIR"/.claude/themes/*.json; do
+    [ -e "$theme" ] || continue   # không có theme nào thì bỏ qua
+    backup "$HOME/.claude/themes/$(basename "$theme")"
+    cp "$theme" "$HOME/.claude/themes/"
+  done
+else
+  warn "Không thấy Claude Code (~/.claude) — bỏ qua statusLine + theme."
+  warn "Widget '5h NN%' ở tmux sẽ ẩn cho tới khi có dữ liệu usage."
+fi
+
+# ---------------------------------------------------------------------------
+# 8) Đặt zsh làm shell mặc định
+# ---------------------------------------------------------------------------
+ZSH_BIN="$(command -v zsh)"
+if [ "${SHELL:-}" != "$ZSH_BIN" ]; then
+  grep -q "$ZSH_BIN" /etc/shells || echo "$ZSH_BIN" | sudo tee -a /etc/shells >/dev/null || true
+  warn "Đổi shell mặc định sang zsh (có thể hỏi mật khẩu)..."
+  chsh -s "$ZSH_BIN" || warn "chsh thất bại — đổi thủ công sau."
+fi
+
+log "XONG! Mở một cửa sổ Alacritty MỚI -> tự vào tmux."
+log "tmux tự lưu session mỗi 15' và tự khôi phục sau khi reboot."

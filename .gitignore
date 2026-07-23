@@ -1,0 +1,9 @@
+# backup tạo ra khi chạy install.sh
+*.bak
+*.bak.*
+
+# rác macOS
+.DS_Store
+
+# Claude Code local settings (permissions theo máy, không commit)
+.claude/settings.local.json

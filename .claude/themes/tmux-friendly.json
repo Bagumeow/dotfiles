@@ -1,0 +1,14 @@
+{
+  "name": "Tmux-friendly",
+  "base": "dark-ansi",
+  "overrides": {
+    "userMessageBackground": "rgb(42, 80, 66)",
+    "userMessageBackgroundHover": "rgb(54, 80, 84)",
+    "bashMessageBackgroundColor": "rgb(35, 100, 54)",
+    "memoryBackgroundColor": "rgb(45, 51, 77)",
+    "selectionBg": "rgb(45, 100, 118)",
+    "claude": "#bd93f9",
+    "error": "#ff5555",
+    "success": "#50fa7b"
+  }
+}
