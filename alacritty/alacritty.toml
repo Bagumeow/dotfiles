@@ -21,8 +21,7 @@ blue = '#9db8ff'
 padding = { x = 0, y = 0 }
 decorations = "none"
 
-opacity = 1
-# opacity = 0.8
+opacity = 0.8
 # blur = true
 
 [font]
