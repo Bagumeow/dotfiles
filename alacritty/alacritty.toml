@@ -21,6 +21,11 @@ blue = '#9db8ff'
 padding = { x = 0, y = 0 }
 decorations = "none"
 
+# Phủ kín màn hình nhưng KHÔNG chiếm Space riêng của macOS.
+# Fullscreen native (Space riêng) composite lên nền đen -> opacity dưới đây
+# sẽ ra màu đen thay vì xuyên thấy wallpaper. Đổi giá trị này cần restart.
+startup_mode = "SimpleFullscreen"
+
 opacity = 0.8
 # blur = true
 
@@ -39,6 +44,13 @@ import = [
 key = "Return"
 mods = "Shift"
 chars = "\u001B\r"
+
+# Ghi đè default Ctrl+Cmd+F (ToggleFullscreen -> đẩy sang Space riêng, làm mất
+# trong suốt) thành bản fullscreen không chiếm Space
+[[keyboard.bindings]]
+key = "F"
+mods = "Command|Control"
+action = "ToggleSimpleFullscreen"
 
 # Mở Alacritty là tự vào tmux (attach session cũ hoặc khôi phục sau reboot)
 [terminal.shell]
