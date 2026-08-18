@@ -60,6 +60,13 @@ command -v kubens         >/dev/null 2>&1 || brew install kubectx     # alias kn
 brew list --cask alacritty                  >/dev/null 2>&1 || brew install --cask alacritty
 brew list --cask font-jetbrains-mono-nerd-font >/dev/null 2>&1 || brew install --cask font-jetbrains-mono-nerd-font
 brew list --cask hammerspoon                >/dev/null 2>&1 || brew install --cask hammerspoon  # kêu ↑/↓ trong Alacritty
+# Orca (stably.ai) — IDE điều phối AI agent. Nằm ở tap riêng: cask `orca` của
+# homebrew-cask là tool khác của plotly. Homebrew không tự tap tap của bên thứ ba
+# nên phải tap trước.
+brew tap | grep -qx 'stablyai/orca' || brew tap stablyai/orca || warn "không tap được stablyai/orca"
+if ! brew list --cask stablyai/orca/orca >/dev/null 2>&1 && [ ! -d /Applications/Orca.app ]; then
+  brew install --cask stablyai/orca/orca || warn "cài Orca thất bại — xem https://onorca.dev"
+fi
 
 # ---------------------------------------------------------------------------
 # 2) tmux config + scripts
@@ -165,7 +172,34 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 8) Đặt zsh làm shell mặc định
+# 8) Orca (stably.ai) — keybindings + settings (theme, độ trong suốt)
+#    App được cài ở bước 1 qua tap `stablyai/orca`. Repo chỉ quản 2 thứ:
+#      - orca/keybindings.json -> ~/.orca/keybindings.json (copy thẳng)
+#      - orca/settings.json    -> merge vào profiles/<id>/orca-data.json
+#        (qua orca/apply-settings.sh — xem header script đó)
+#    Settings của Orca nằm CHUNG trong state file orca-data.json (projects,
+#    worktree, session...) nên chỉ merge đúng mấy key mình own, không copy cả file.
+#    Không quản lý ~/.orca/agent-hooks/*.sh (Orca tự sinh, khớp version app) và
+#    phần còn lại của ~/Library/Application Support/orca/ (state + secret:
+#    authToken, e2ee key).
+# ---------------------------------------------------------------------------
+if [ -d "$HOME/.orca" ] || [ -d "/Applications/Orca.app" ]; then
+  log "Đặt keybindings Orca..."
+  mkdir -p "$HOME/.orca"
+  backup "$HOME/.orca/keybindings.json"
+  cp "$DOTFILES_DIR/orca/keybindings.json" "$HOME/.orca/keybindings.json"
+
+  # Settings (theme, độ trong suốt) chỉ merge được khi Orca đã tắt -> mode
+  # --if-possible: Orca đang chạy thì bỏ qua kèm hướng dẫn, không làm install.sh die.
+  "$DOTFILES_DIR/orca/apply-settings.sh" --if-possible || warn "merge settings Orca lỗi"
+  warn "Orca cần restart app để nhận keybindings + Window Blur."
+else
+  warn "Không thấy Orca (/Applications/Orca.app) — bỏ qua keybindings + settings."
+  warn "Cài tay: brew install --cask stablyai/orca/orca (hoặc https://onorca.dev)."
+fi
+
+# ---------------------------------------------------------------------------
+# 9) Đặt zsh làm shell mặc định
 # ---------------------------------------------------------------------------
 ZSH_BIN="$(command -v zsh)"
 if [ "${SHELL:-}" != "$ZSH_BIN" ]; then

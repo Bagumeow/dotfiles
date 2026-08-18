@@ -35,13 +35,44 @@ Sau khi xong: **mở một cửa sổ Alacritty mới** → tự vào tmux.
 | Alacritty | `alacritty/alacritty.toml` | `~/.config/alacritty/alacritty.toml` |
 | Hammerspoon (kêu phím mũi tên) | `hammerspoon/init.lua` | `~/.hammerspoon/init.lua` |
 | File tiếng phím mũi tên | `audio/*.mp3` | `~/.hammerspoon/` |
+| keybindings Orca | `orca/keybindings.json` | `~/.orca/keybindings.json` |
+| settings Orca (theme, độ trong suốt) | `orca/settings.json` | `orca-data.json` của profile đang active (merge jq) |
 | zsh | `zsh/.zshrc` | `~/.zshrc` |
 
-`install.sh` còn tự cài: Homebrew, tmux, Alacritty, Hammerspoon, font JetBrainsMono Nerd, jq,
+`install.sh` còn tự cài: Homebrew, tmux, Alacritty, Hammerspoon, Orca, font JetBrainsMono Nerd, jq,
 fswatch (cho `watch.sh`), oh-my-zsh + 3 plugin (autosuggestions,
 syntax-highlighting, completions), TPM + plugin tmux (resurrect + continuum),
 theme Alacritty, và các CLI mà `.zshrc` cần: **thefuck**, **python@3.12**,
 **kubectl**, **kubectx** (cho `kubens`).
+
+**Orca** nằm ở tap riêng nên `install.sh` tap trước rồi mới cài:
+
+```bash
+brew tap stablyai/orca
+brew install --cask stablyai/orca/orca
+```
+
+(Cask `orca` trong homebrew-cask là tool khác của plotly, và Homebrew không tự tap
+tap của bên thứ ba.) Bước cài được bỏ qua nếu máy đã có `/Applications/Orca.app`,
+ví dụ tải từ [onorca.dev](https://onorca.dev) — app tự update nên brew có thể báo
+version cũ hơn. Restart Orca để nhận keybindings mới và Window Blur.
+
+Orca không có CLI để set settings, và settings của nó nằm **ngay trong state file**
+`~/Library/Application Support/orca/profiles/<activeProfileId>/orca-data.json`
+(chung với projects, worktree, session), nên repo không thể copy cả file đó.
+`orca/settings.json` chỉ chứa đúng mấy key mình own, `install.sh`/`watch.sh` sẽ
+`jq`-merge vào, ~180 setting còn lại và toàn bộ state giữ nguyên:
+
+| Key | Giá trị | Ý nghĩa |
+|---|---|---|
+| `theme` | `dark` | theme của app |
+| `terminalThemeDark` | `Tokyo Night` | theme terminal (builtin còn có Gruvbox, Catppuccin Mocha/Latte, One Dark, Solarized; import được theme của Warp vào `terminalCustomThemes`) |
+| `terminalBackgroundOpacity` | `0.9` | độ trong suốt nền terminal — 1 là đục hẳn, 0 là trong hẳn |
+| `windowBackgroundBlur` | `true` | vibrancy macOS phía sau cửa sổ (**phải restart app**) |
+
+> ⚠️ **Đang mở Orca thì bước merge bị bỏ qua** — app giữ state trong memory và ghi
+> đè lại `orca-data.json` nên sẽ mất thay đổi. Tắt hẳn Orca (`Cmd-Q`) rồi chạy
+> `./install.sh`. Bản `orca-data.json` cũ được copy thành `*.bak.<timestamp>` trước.
 
 ## Live reload khi đang sửa repo này (`watch.sh`)
 
@@ -66,6 +97,8 @@ gồm cả thay `__TMUX_LAUNCH__` và `chmod +x`) và reload nơi nào được:
 | `audio/*.mp3` | copy → dùng ngay ở lần bấm kế tiếp (không cần reload) |
 | `.claude/settings.json` | merge jq vào `~/.claude/settings.json` (hook + statusLine) |
 | `.claude/themes/*.json` | copy → chọn lại theme trong Claude Code để áp dụng |
+| `orca/keybindings.json` | copy → **restart Orca** để nhận |
+| `orca/settings.json` | merge jq vào `orca-data.json` của profile active (**bỏ qua khi Orca đang chạy**) |
 
 Khác `install.sh`: **không** tạo backup `.bak` mỗi lần lưu — bản cũ đã nằm
 trong git. Cần `fswatch` (`install.sh` tự cài).

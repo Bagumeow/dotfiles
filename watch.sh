@@ -14,6 +14,8 @@
 #   - audio/*.mp3              -> ~/.hammerspoon/ (tiếng phím mũi tên, dùng ngay)
 #   - .claude/settings.json    -> merge hook + statusLine vào ~/.claude/settings.json
 #   - .claude/themes/*.json    -> ~/.claude/themes/ (chọn lại theme trong Claude Code)
+#   - orca/keybindings.json    -> ~/.orca/keybindings.json (restart Orca để nhận)
+#   - orca/settings.json       -> merge vào orca-data.json (chỉ khi Orca đã tắt)
 #
 # Khác install.sh: KHÔNG tạo backup .bak mỗi lần lưu (tránh rác) — bản cũ đã
 # nằm trong git, repo là source of truth.
@@ -98,13 +100,25 @@ deploy() {
       cp "$DOTFILES_DIR/.claude/themes/$name" ~/.claude/themes/"$name"
       log "$name -> ~/.claude/themes/$name (chọn lại theme trong Claude Code)"
       ;;
+    "$DOTFILES_DIR"/orca/keybindings.json)
+      [ -f "$DOTFILES_DIR/orca/keybindings.json" ] || return 0  # file vừa bị xoá/đổi tên
+      mkdir -p ~/.orca
+      cp "$DOTFILES_DIR/orca/keybindings.json" ~/.orca/keybindings.json
+      log "keybindings.json -> ~/.orca/keybindings.json (restart Orca để nhận)"
+      ;;
+    "$DOTFILES_DIR"/orca/settings.json)
+      [ -f "$DOTFILES_DIR/orca/settings.json" ] || return 0  # file vừa bị xoá/đổi tên
+      # Merge vào state file của profile — chỉ được khi Orca đã tắt (mode
+      # --if-possible tự bỏ qua nếu app đang chạy).
+      "$DOTFILES_DIR/orca/apply-settings.sh" --if-possible || warn "merge settings Orca lỗi"
+      ;;
     *) ;;  # file lạ (swap/tmp của editor, .DS_Store, .bak...) — bỏ qua
   esac
 }
 
 # Sync toàn bộ một lần lúc khởi động cho repo và hệ thống khớp nhau
 log "Sync lần đầu..."
-mkdir -p ~/.config/tmux ~/.config/alacritty ~/.claude/themes ~/.hammerspoon
+mkdir -p ~/.config/tmux ~/.config/alacritty ~/.claude/themes ~/.hammerspoon ~/.orca
 deploy "$DOTFILES_DIR/tmux/.tmux.conf"
 for s in "$DOTFILES_DIR"/tmux/*.sh; do deploy "$s"; done
 deploy "$DOTFILES_DIR/alacritty/alacritty.toml"
@@ -113,9 +127,11 @@ deploy "$DOTFILES_DIR/hammerspoon/init.lua"
 for snd in "$DOTFILES_DIR"/audio/*.mp3; do deploy "$snd"; done
 deploy "$DOTFILES_DIR/.claude/settings.json"
 for t in "$DOTFILES_DIR"/.claude/themes/*.json; do deploy "$t"; done
+deploy "$DOTFILES_DIR/orca/keybindings.json"
+deploy "$DOTFILES_DIR/orca/settings.json"
 
-log "Đang canh $DOTFILES_DIR (tmux/ alacritty/ zsh/ hammerspoon/ audio/ .claude/) — Ctrl-C để dừng."
-fswatch "$DOTFILES_DIR/tmux" "$DOTFILES_DIR/alacritty" "$DOTFILES_DIR/zsh" "$DOTFILES_DIR/hammerspoon" "$DOTFILES_DIR/audio" "$DOTFILES_DIR/.claude" |
+log "Đang canh $DOTFILES_DIR (tmux/ alacritty/ zsh/ hammerspoon/ audio/ .claude/ orca/) — Ctrl-C để dừng."
+fswatch "$DOTFILES_DIR/tmux" "$DOTFILES_DIR/alacritty" "$DOTFILES_DIR/zsh" "$DOTFILES_DIR/hammerspoon" "$DOTFILES_DIR/audio" "$DOTFILES_DIR/.claude" "$DOTFILES_DIR/orca" |
 while IFS= read -r path; do
   deploy "$path" || warn "deploy lỗi: $path"
 done

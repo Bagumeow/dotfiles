@@ -1,0 +1,6 @@
+{
+  "theme": "dark",
+  "terminalThemeDark": "Gruvbox Dark",
+  "terminalBackgroundOpacity": 0.9,
+  "windowBackgroundBlur": true
+}

@@ -35,13 +35,46 @@ When it finishes: **open a new Alacritty window** → it drops you straight into
 | Alacritty | `alacritty/alacritty.toml` | `~/.config/alacritty/alacritty.toml` |
 | Hammerspoon (arrow-key sound) | `hammerspoon/init.lua` | `~/.hammerspoon/init.lua` |
 | Arrow-key sound files | `audio/*.mp3` | `~/.hammerspoon/` |
+| Orca keybindings | `orca/keybindings.json` | `~/.orca/keybindings.json` |
+| Orca settings (theme, opacity) | `orca/settings.json` | `orca-data.json` of the active profile (jq-merged) |
 | zsh | `zsh/.zshrc` | `~/.zshrc` |
 
-`install.sh` also installs: Homebrew, tmux, Alacritty, Hammerspoon, JetBrainsMono Nerd font, jq,
+`install.sh` also installs: Homebrew, tmux, Alacritty, Hammerspoon, Orca, JetBrainsMono Nerd font, jq,
 fswatch (for `watch.sh`), oh-my-zsh + 3 plugins (autosuggestions,
 syntax-highlighting, completions), TPM + tmux plugins (resurrect + continuum),
 the Alacritty theme, and the CLIs `.zshrc` needs: **thefuck**, **python@3.12**,
 **kubectl**, **kubectx** (for `kubens`).
+
+**Orca** comes from its own tap, so `install.sh` taps it first:
+
+```bash
+brew tap stablyai/orca
+brew install --cask stablyai/orca/orca
+```
+
+(The `orca` cask in homebrew-cask is plotly's unrelated tool, and Homebrew doesn't
+auto-tap third-party taps.) The install is skipped when `/Applications/Orca.app`
+already exists, e.g. installed from [onorca.dev](https://onorca.dev) — the app
+self-updates, so brew may report an older version. Restart Orca to pick up new
+keybindings and Window Blur.
+
+Orca has no CLI for settings, and its settings live **inside the state file**
+`~/Library/Application Support/orca/profiles/<activeProfileId>/orca-data.json`
+(together with projects, worktrees and session state), so the repo can't just copy
+that file. `orca/settings.json` holds only the keys we own and `install.sh`/`watch.sh`
+`jq`-merge them in, leaving the other ~180 settings and all state untouched:
+
+| Key | Value | Meaning |
+|---|---|---|
+| `theme` | `dark` | app theme |
+| `terminalThemeDark` | `Tokyo Night` | terminal theme (builtins include Gruvbox, Catppuccin Mocha/Latte, One Dark, Solarized; Warp themes can be imported into `terminalCustomThemes`) |
+| `terminalBackgroundOpacity` | `0.9` | terminal background transparency — 1 opaque, 0 fully transparent |
+| `windowBackgroundBlur` | `true` | macOS vibrancy behind the window (**needs an app restart**) |
+
+> ⚠️ **The merge is skipped while Orca is running** — the app keeps its state in
+> memory and rewrites `orca-data.json`, so it would overwrite the change. Quit Orca
+> (`Cmd-Q`), then run `./install.sh`. The previous `orca-data.json` is copied to
+> `*.bak.<timestamp>` first.
 
 ## Live reload while editing this repo (`watch.sh`)
 
@@ -67,6 +100,8 @@ possible:
 | `audio/*.mp3` | copied → used on the next keypress (no reload needed) |
 | `.claude/settings.json` | jq-merged into `~/.claude/settings.json` (hooks + statusLine) |
 | `.claude/themes/*.json` | copied → re-pick the theme in Claude Code to apply |
+| `orca/keybindings.json` | copied → **restart Orca** to pick it up |
+| `orca/settings.json` | `jq`-merged into the active profile's `orca-data.json` (**skipped while Orca runs**) |
 
 Unlike `install.sh`, it does **not** create `.bak` backups on every save — the
 old version is already in git. Requires `fswatch` (installed by `install.sh`).
