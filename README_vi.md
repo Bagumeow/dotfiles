@@ -189,6 +189,7 @@ syntax-highlighting, completions), thêm alias và prompt tuỳ biến.
 | `ala` | mở cửa sổ Alacritty mới ở thư mục hiện tại |
 | `claudesudo` | `claude --dangerously-skip-permissions` |
 | `unquar` | gỡ cờ quarantine của macOS (`xattr -dr com.apple.quarantine`) |
+| `tailscale` | CLI Tailscale nằm trong `Tailscale.app` |
 
 **Prompt** tự đổi theo ngữ cảnh:
 

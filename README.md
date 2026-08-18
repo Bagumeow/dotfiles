@@ -195,6 +195,7 @@ syntax-highlighting, completions), plus custom aliases and a custom prompt.
 | `ala` | open a new Alacritty window in the current directory |
 | `claudesudo` | `claude --dangerously-skip-permissions` |
 | `unquar` | remove macOS quarantine flag (`xattr -dr com.apple.quarantine`) |
+| `tailscale` | the Tailscale CLI bundled inside `Tailscale.app` |
 
 **Prompt** adapts to context:
 

@@ -41,6 +41,8 @@ alias ala='alacritty msg create-window --working-directory "$PWD" 2>/dev/null ||
 # Disable default virtualenv prompt modification
 export VIRTUAL_ENV_DISABLE_PROMPT=1
 
+alias tailscale="/Applications/Tailscale.app/Contents/MacOS/Tailscale"
+
 # Function to get current Git branch (only if in git repo)
 git_branch() {
     local branch=$(git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')
