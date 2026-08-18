@@ -11,9 +11,12 @@
 --   System Settings → Privacy & Security → Accessibility → bật Hammerspoon
 -- ---------------------------------------------------------------------------
 
--- App sẽ kêu khi bấm phím mũi tên. Thêm ["Code"] = true nếu chạy Claude trong
--- terminal VS Code (lưu ý: kêu cả khi bấm mũi tên trong editor VS Code).
-local targetApps = { ["Alacritty"] = true}
+-- App sẽ kêu khi bấm phím mũi tên. So khớp theo app:name() — Alacritty và Orca
+-- (CFBundleName của Orca.app là "Orca"). Thêm ["Code"] = true nếu chạy Claude
+-- trong terminal VS Code (lưu ý: kêu cả khi bấm mũi tên trong editor VS Code).
+-- Mỗi app là MỘT key riêng. Viết { ["Alacritty", "Orca"] = true } là SAI syntax
+-- Lua (khoá [exp] chỉ nhận 1 expression) -> cả file không load, mất luôn tiếng.
+local targetApps = { ["Alacritty"] = true, ["Orca"] = true }
 
 -- 126=Up, 125=Down, 123=Left, 124=Right
 local arrowKeys = { [126] = true, [125] = true, [123] = true, [124] = true }
