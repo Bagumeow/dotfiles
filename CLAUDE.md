@@ -104,7 +104,8 @@ animated widgets rely on `status-interval 1`.
 
 **Orca (stably.ai desktop app) — only `keybindings.json` is ours.** Orca keeps
 three separate things on disk; of those, the repo manages exactly one (it also
-owns a few settings keys and the Finder shim — both covered further down):
+owns a few settings keys, a patched-in app icon, and the Finder shim — all three
+covered further down):
 
 - `~/.orca/keybindings.json` — hand-edited, **in the repo** (`orca/keybindings.json`),
   copied verbatim by `install.sh`.
@@ -133,6 +134,57 @@ install is skipped when `/Applications/Orca.app` exists (the app self-updates, s
 can be ahead of the cask version). The config block in step 8 is skipped entirely
 unless `/Applications/Orca.app` or `~/.orca` exists. Neither keybindings nor settings
 can be live-reloaded — Orca has to be restarted, so `watch.sh` only stages the files.
+
+**The custom app icon is a binary patch of `app.asar`, not a setting.** The **App
+Icon** carousel (Settings → Appearance → Interface → Advanced) is driven by
+`APP_ICON_OPTIONS`, a hardcoded array in Orca's JS bundle, and `normalizeAppIconId()`
+coerces any unknown id back to `classic` — so writing `appIcon` into `orca-data.json`
+alone does nothing. `orca/patch-app-icons.sh` adds a fourth entry by rewriting
+`Orca.app/Contents/Resources/app.asar`, and `install.sh` runs it **before**
+`apply-settings.sh` (the `appIcon` key in `orca/settings.json` is only valid after the
+patch). Five spots, in three logical files plus their minified web-bundle twins:
+
+| Spot | File in the asar | What it feeds |
+|---|---|---|
+| `APP_ICON_OPTIONS` | `out/main/index.js`, `out/{renderer,web}/assets/store-*.js` | the id/label list |
+| `APP_ICON_PATHS` | `out/main/index.js` | id → PNG for `nativeImage` |
+| `MAC_DOCK_ICON_PATHS` | `out/main/index.js` | id → PNG for the `osascript` that persists the Dock icon |
+| `APP_ICON_URLS` | `out/{renderer,web}/assets/Settings-*.js` | the carousel preview `<img>` |
+
+Facts the script depends on — check these first if it ever breaks:
+
+- Electron's `enable_embedded_asar_integrity_validation` fuse is **0** in Orca's
+  build (read from `Electron Framework`), so the `ElectronAsarIntegrity` hash in
+  `Info.plist` is not enforced and the app is **not re-signed** — the main binary's
+  signature stays valid, so TCC/keychain permissions survive. `codesign --verify` on
+  the bundle does start failing; Squirrel auto-update may break with it.
+- asar layout is `[Chromium Pickle header][data blob]` with per-file offsets
+  **relative to the data blob** (and stored as strings). Data starts at
+  `8 + pickle2BufferSize` — **not** `16 + jsonLength`, that misses the 4-byte
+  alignment padding. It does not use `asar pack`, because 954 of 2743 entries are
+  flagged `unpacked` and repacking would lose those flags.
+- The rewrite is deliberately **append-only**: the old data blob is copied byte for
+  byte and the patched/new files go after it, so every pre-existing offset survives
+  unchanged. Renumbering offsets compactly also works and saves ~20 MB, but a
+  **running** Orca caches the asar header in memory while reading data **by path** —
+  with renumbered offsets its stale header points into the wrong bytes and every icon
+  in the app turns into a broken image until restart. Append-only keeps the live app
+  fully consistent (it just doesn't see the new entry yet). The cost is the superseded
+  copies of the 5 JS files left behind as dead space (128 MB → 148 MB).
+- The Dock icon PNG must be `unpacked` (`app.asar.unpacked/resources/app-icons/`) —
+  `osascript`/`NSImage` cannot read inside an asar. The carousel preview PNG must be
+  **packed**, since it is fetched as a URL relative to the renderer chunk.
+- Icon art is `orca/app-icons/*.png`: 1024×1024 RGBA, alpha copied verbatim from
+  Orca's `orca-watercolor.png` so the squircle and padding (solid area 878×888, inset
+  73px horizontal / 68px vertical) match the stock icons. An opaque photo would render
+  as a white square in the Dock.
+- Orca self-updates and each update restores the stock `app.asar`, so the patch must
+  be re-applied; the script is idempotent and caches the pristine asar in
+  `~/.cache/orca-app-icons/` for `--revert`/`--force`. `watch.sh` deliberately does
+  **not** run it in the initial sync (it rewrites a 120 MB file in `/Applications`) —
+  only when an icon PNG or the script itself is edited.
+- The carousel renders the image only, no label, so a `label` is visible solely in the
+  settings search index.
 
 **Opening a file in Orca from Finder needs a shim — the app cannot do it.**
 Orca.app's `Info.plist` declares **no `CFBundleDocumentTypes`** (and no

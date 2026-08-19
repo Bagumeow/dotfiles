@@ -36,7 +36,8 @@ When it finishes: **open a new Alacritty window** → it drops you straight into
 | Hammerspoon (arrow-key sound) | `hammerspoon/init.lua` | `~/.hammerspoon/init.lua` |
 | Arrow-key sound files | `audio/*.mp3` | `~/.hammerspoon/` |
 | Orca keybindings | `orca/keybindings.json` | `~/.orca/keybindings.json` |
-| Orca settings (theme, opacity) | `orca/settings.json` | `orca-data.json` of the active profile (jq-merged) |
+| Orca settings (theme, opacity, app icon) | `orca/settings.json` | `orca-data.json` of the active profile (jq-merged) |
+| Orca custom app icon | `orca/app-icons/*.png` | patched into `Orca.app/Contents/Resources/app.asar` |
 | Orca "open file from Finder" shim | `orca/open-in-orca.sh` | `~/.config/orca/open-in-orca.sh` |
 | Orca Finder applet | `orca/open-in-orca.applescript` | `~/Applications/Open in Orca.app` (compiled) |
 | Orca default-app bindings | `orca/set-default-apps.sh` | LaunchServices (`.py` `.txt` `.md` `.sh`) |
@@ -73,11 +74,54 @@ that file. `orca/settings.json` holds only the keys we own and `install.sh`/`wat
 | `terminalThemeDark` | `Tokyo Night` | terminal theme (builtins include Gruvbox, Catppuccin Mocha/Latte, One Dark, Solarized; Warp themes can be imported into `terminalCustomThemes`) |
 | `terminalBackgroundOpacity` | `0.9` | terminal background transparency — 1 opaque, 0 fully transparent |
 | `windowBackgroundBlur` | `true` | macOS vibrancy behind the window (**needs an app restart**) |
+| `appIcon` | `nghia-water` | the app icon — only valid **after** `patch-app-icons.sh` has run (see below) |
 
 > ⚠️ **The merge is skipped while Orca is running** — the app keeps its state in
 > memory and rewrites `orca-data.json`, so it would overwrite the change. Quit Orca
 > (`Cmd-Q`), then run `./install.sh`. The previous `orca-data.json` is copied to
 > `*.bak.<timestamp>` first.
+
+### A custom app icon
+
+Settings → Appearance → Interface → Advanced has an **App Icon** carousel, but its
+three entries (`classic`, `watercolor`, `blue`) are a **hardcoded constant inside
+Orca's JS bundle** — there is no settings key, no CLI and no icon folder to drop a
+file into, and `normalizeAppIconId()` forces any unknown id back to `classic`. Adding
+a fourth entry means patching `Orca.app/Contents/Resources/app.asar`, which is what
+`orca/patch-app-icons.sh` does (five spots: `APP_ICON_OPTIONS`, `APP_ICON_PATHS`,
+`MAC_DOCK_ICON_PATHS`, `APP_ICON_URLS`, plus the minified copies in the web bundle):
+
+```bash
+./orca/patch-app-icons.sh            # patch (idempotent — a no-op if already patched)
+./orca/patch-app-icons.sh --status   # is it patched?
+./orca/patch-app-icons.sh --force    # restore the pristine copy, then patch again
+./orca/patch-app-icons.sh --revert   # back to the stock app.asar
+```
+
+The image is `orca/app-icons/nghia-water.png` — a 1024×1024 RGBA PNG whose alpha
+channel is copied straight from Orca's own `orca-watercolor.png`, so the squircle and
+the padding match the stock icons exactly. A photo on a white background dropped in
+as-is would show up as a white square in the Dock.
+
+This works only because Electron's `enable_embedded_asar_integrity_validation` fuse
+is **off** in Orca's build, so the asar header hash in `Info.plist` isn't checked and
+the app does **not** need re-signing (the main binary's signature stays intact, so
+TCC/keychain permissions survive). What it costs:
+
+- **Orca self-updates**, and every update replaces `app.asar` with the stock one —
+  re-run the script (`./install.sh` does). The pristine copy is cached in
+  `~/.cache/orca-app-icons/` (~120 MB) so `--revert`/`--force` never need to
+  re-download the cask.
+- `codesign --verify /Applications/Orca.app` now fails ("a sealed resource is missing
+  or invalid") and auto-update through Squirrel may break with it. If it does:
+  `./orca/patch-app-icons.sh --revert` or
+  `brew reinstall --cask stablyai/orca/orca`.
+- The rewrite is **append-only** (old offsets preserved byte for byte, patched files
+  appended), so patching while Orca is open doesn't disturb the running app — it just
+  won't show the new entry until a restart. That leaves the superseded JS copies as
+  dead space: `app.asar` grows from 128 MB to 148 MB.
+- The carousel shows **only the image**, no label, so `Nghia Water` is visible only
+  in the settings search index.
 
 ### Opening a file in Orca from Finder
 
@@ -160,6 +204,7 @@ possible:
 | `.claude/themes/*.json` | copied → re-pick the theme in Claude Code to apply |
 | `orca/keybindings.json` | copied → **restart Orca** to pick it up |
 | `orca/settings.json` | `jq`-merged into the active profile's `orca-data.json` (**skipped while Orca runs**) |
+| `orca/app-icons/*.png` | `app.asar` re-patched from the pristine copy → **restart Orca** to pick it up |
 | `orca/open-in-orca.sh` | copied + `chmod +x` → the applet picks it up on the next open |
 | `orca/open-in-orca.applescript` | applet recompiled (run `./install.sh` to also patch the plist + re-sign) |
 | `orca/set-default-apps.sh` | re-run → rebinds the default app for `.py` `.txt` `.md` `.sh` |

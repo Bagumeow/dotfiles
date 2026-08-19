@@ -36,7 +36,8 @@ Sau khi xong: **mở một cửa sổ Alacritty mới** → tự vào tmux.
 | Hammerspoon (kêu phím mũi tên) | `hammerspoon/init.lua` | `~/.hammerspoon/init.lua` |
 | File tiếng phím mũi tên | `audio/*.mp3` | `~/.hammerspoon/` |
 | keybindings Orca | `orca/keybindings.json` | `~/.orca/keybindings.json` |
-| settings Orca (theme, độ trong suốt) | `orca/settings.json` | `orca-data.json` của profile đang active (merge jq) |
+| settings Orca (theme, độ trong suốt, app icon) | `orca/settings.json` | `orca-data.json` của profile đang active (merge jq) |
+| app icon riêng cho Orca | `orca/app-icons/*.png` | vá vào `Orca.app/Contents/Resources/app.asar` |
 | shim "mở file từ Finder" của Orca | `orca/open-in-orca.sh` | `~/.config/orca/open-in-orca.sh` |
 | applet Finder cho Orca | `orca/open-in-orca.applescript` | `~/Applications/Open in Orca.app` (compile ra) |
 | app mặc định cho Orca | `orca/set-default-apps.sh` | LaunchServices (`.py` `.txt` `.md` `.sh`) |
@@ -72,10 +73,51 @@ Orca không có CLI để set settings, và settings của nó nằm **ngay tron
 | `terminalThemeDark` | `Tokyo Night` | theme terminal (builtin còn có Gruvbox, Catppuccin Mocha/Latte, One Dark, Solarized; import được theme của Warp vào `terminalCustomThemes`) |
 | `terminalBackgroundOpacity` | `0.9` | độ trong suốt nền terminal — 1 là đục hẳn, 0 là trong hẳn |
 | `windowBackgroundBlur` | `true` | vibrancy macOS phía sau cửa sổ (**phải restart app**) |
+| `appIcon` | `nghia-water` | app icon — chỉ hợp lệ **sau khi** chạy `patch-app-icons.sh` (xem dưới) |
 
 > ⚠️ **Đang mở Orca thì bước merge bị bỏ qua** — app giữ state trong memory và ghi
 > đè lại `orca-data.json` nên sẽ mất thay đổi. Tắt hẳn Orca (`Cmd-Q`) rồi chạy
 > `./install.sh`. Bản `orca-data.json` cũ được copy thành `*.bak.<timestamp>` trước.
+
+### App icon riêng
+
+Settings → Appearance → Interface → Advanced có carousel **App Icon**, nhưng 3 mục
+trong đó (`classic`, `watercolor`, `blue`) là **hằng số hardcode trong bundle JS** của
+Orca — không có key setting, không có CLI, không có thư mục icon nào để bỏ file vào, và
+`normalizeAppIconId()` ép mọi id lạ về `classic`. Muốn có mục thứ 4 thì phải vá
+`Orca.app/Contents/Resources/app.asar`, đó là việc của `orca/patch-app-icons.sh`
+(5 chỗ: `APP_ICON_OPTIONS`, `APP_ICON_PATHS`, `MAC_DOCK_ICON_PATHS`, `APP_ICON_URLS`,
+cộng bản minify trong bundle web):
+
+```bash
+./orca/patch-app-icons.sh            # vá (idempotent — vá rồi thì bỏ qua)
+./orca/patch-app-icons.sh --status   # xem đã vá chưa
+./orca/patch-app-icons.sh --force    # trả bản gốc rồi vá lại
+./orca/patch-app-icons.sh --revert   # trả app.asar về bản gốc
+```
+
+Ảnh là `orca/app-icons/nghia-water.png` — PNG RGBA 1024×1024, kênh alpha lấy nguyên từ
+`orca-watercolor.png` của chính Orca nên bo góc squircle và lề khớp đúng icon gốc. Ảnh
+chụp nền trắng đưa vào thẳng sẽ ra hình vuông trắng ở Dock.
+
+Vá được là vì fuse `enable_embedded_asar_integrity_validation` của Electron trong bản
+build của Orca **tắt**, nên hash header asar trong `Info.plist` không bị kiểm và
+**không cần ký lại app** (chữ ký binary chính còn nguyên → quyền TCC/keychain không
+mất). Cái giá phải trả:
+
+- **Orca tự update**, mỗi lần update là `app.asar` bị thay bằng bản gốc — phải chạy lại
+  script (`./install.sh` cũng chạy). Bản gốc được cache ở `~/.cache/orca-app-icons/`
+  (~120 MB) để `--revert`/`--force` khỏi phải tải lại cask.
+- `codesign --verify /Applications/Orca.app` từ giờ sẽ fail ("a sealed resource is
+  missing or invalid") và auto-update qua Squirrel có thể hỏng theo. Hỏng thì:
+  `./orca/patch-app-icons.sh --revert` hoặc
+  `brew reinstall --cask stablyai/orca/orca`.
+- Cách ghi là **append-only** (offset cũ giữ nguyên từng byte, file vá nối vào cuối)
+  nên vá lúc đang mở Orca không làm app đang chạy vỡ ảnh — chỉ là chưa thấy mục mới
+  cho tới khi restart. Đổi lại bản cũ của mấy file JS nằm lại làm rác: `app.asar`
+  phình từ 128 MB lên 148 MB.
+- Carousel **chỉ hiện ảnh**, không hiện label, nên `Nghia Water` chỉ thấy được ở ô
+  search trong Settings.
 
 ### Mở file trong Orca từ Finder
 
@@ -155,6 +197,7 @@ gồm cả thay `__TMUX_LAUNCH__` và `chmod +x`) và reload nơi nào được:
 | `.claude/themes/*.json` | copy → chọn lại theme trong Claude Code để áp dụng |
 | `orca/keybindings.json` | copy → **restart Orca** để nhận |
 | `orca/settings.json` | merge jq vào `orca-data.json` của profile active (**bỏ qua khi Orca đang chạy**) |
+| `orca/app-icons/*.png` | vá lại `app.asar` từ bản gốc → **restart Orca** để nhận |
 | `orca/open-in-orca.sh` | copy + `chmod +x` → applet ăn ngay ở lần mở file kế tiếp |
 | `orca/open-in-orca.applescript` | compile lại applet (chạy `./install.sh` để vá plist + ký lại) |
 | `orca/set-default-apps.sh` | chạy lại → bind lại app mặc định cho `.py` `.txt` `.md` `.sh` |

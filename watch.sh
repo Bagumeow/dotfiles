@@ -15,6 +15,7 @@
 #   - .claude/settings.json    -> merge hook + statusLine vào ~/.claude/settings.json
 #   - .claude/themes/*.json    -> ~/.claude/themes/ (chọn lại theme trong Claude Code)
 #   - orca/keybindings.json    -> ~/.orca/keybindings.json (restart Orca để nhận)
+#   - orca/app-icons/*.png     -> vá lại app.asar (restart Orca để nhận)
 #   - orca/settings.json       -> merge vào orca-data.json (chỉ khi Orca đã tắt)
 #   - orca/open-in-orca.sh     -> ~/.config/orca/ (applet gọi -> dùng ngay)
 #   - orca/open-in-orca.applescript -> compile lại ~/Applications/Open in Orca.app
@@ -109,6 +110,11 @@ deploy() {
       cp "$DOTFILES_DIR/orca/keybindings.json" ~/.orca/keybindings.json
       log "keybindings.json -> ~/.orca/keybindings.json (restart Orca để nhận)"
       ;;
+    "$DOTFILES_DIR"/orca/app-icons/*.png|"$DOTFILES_DIR"/orca/patch-app-icons.sh)
+      [ -f "$1" ] || return 0  # file vừa bị xoá/đổi tên
+      # Sửa ảnh icon thì phải vá lại app.asar từ bản gốc -> --force.
+      "$DOTFILES_DIR/orca/patch-app-icons.sh" --force || warn "vá app icon Orca lỗi"
+      ;;
     "$DOTFILES_DIR"/orca/settings.json)
       [ -f "$DOTFILES_DIR/orca/settings.json" ] || return 0  # file vừa bị xoá/đổi tên
       # Merge vào state file của profile — chỉ được khi Orca đã tắt (mode
@@ -164,6 +170,8 @@ deploy "$DOTFILES_DIR/orca/open-in-orca.sh"
 deploy "$DOTFILES_DIR/orca/open-in-orca.applescript"
 # set-default-apps.sh cố tình KHÔNG chạy ở lần sync đầu: nó đụng vào default app
 # của cả hệ thống, chỉ chạy khi mình thật sự sửa file đó (hoặc qua ./install.sh).
+# patch-app-icons.sh cũng vậy: nó ghi lại app.asar 120MB trong /Applications/Orca.app,
+# chỉ chạy khi sửa ảnh icon (hoặc qua ./install.sh).
 
 log "Đang canh $DOTFILES_DIR (tmux/ alacritty/ zsh/ hammerspoon/ audio/ .claude/ orca/) — Ctrl-C để dừng."
 fswatch "$DOTFILES_DIR/tmux" "$DOTFILES_DIR/alacritty" "$DOTFILES_DIR/zsh" "$DOTFILES_DIR/hammerspoon" "$DOTFILES_DIR/audio" "$DOTFILES_DIR/.claude" "$DOTFILES_DIR/orca" |

@@ -173,9 +173,12 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 8) Orca (stably.ai) — keybindings + settings (theme, độ trong suốt) + Finder shim
-#    App được cài ở bước 1 qua tap `stablyai/orca`. Repo chỉ quản 3 thứ:
+# 8) Orca (stably.ai) — keybindings + settings (theme, độ trong suốt) + app icon
+#    + Finder shim
+#    App được cài ở bước 1 qua tap `stablyai/orca`. Repo chỉ quản 4 thứ:
 #      - orca/keybindings.json -> ~/.orca/keybindings.json (copy thẳng)
+#      - orca/app-icons/*.png  -> vá vào app.asar của Orca.app
+#        (qua orca/patch-app-icons.sh — xem header script đó)
 #      - orca/settings.json    -> merge vào profiles/<id>/orca-data.json
 #        (qua orca/apply-settings.sh — xem header script đó)
 #      - orca/open-in-orca.{sh,applescript} -> ~/.config/orca/ + applet
@@ -191,6 +194,14 @@ if [ -d "$HOME/.orca" ] || [ -d "/Applications/Orca.app" ]; then
   mkdir -p "$HOME/.orca"
   backup "$HOME/.orca/keybindings.json"
   cp "$DOTFILES_DIR/orca/keybindings.json" "$HOME/.orca/keybindings.json"
+
+  # App icon riêng: danh sách icon là hằng số trong bundle JS của Orca nên phải vá
+  # app.asar mới thêm được mục thứ 4 vào carousel. Chạy TRƯỚC apply-settings.sh vì
+  # appIcon = "nghia-water" chỉ hợp lệ sau khi vá (không thì Orca ép về "classic").
+  # Idempotent + tự vá lại sau mỗi lần Orca self-update. Xem header script.
+  if [ -d "/Applications/Orca.app" ]; then
+    "$DOTFILES_DIR/orca/patch-app-icons.sh" || warn "vá app icon Orca lỗi"
+  fi
 
   # Settings (theme, độ trong suốt) chỉ merge được khi Orca đã tắt -> mode
   # --if-possible: Orca đang chạy thì bỏ qua kèm hướng dẫn, không làm install.sh die.
@@ -240,7 +251,7 @@ if [ -d "$HOME/.orca" ] || [ -d "/Applications/Orca.app" ]; then
     warn "compile applet 'Open in Orca' lỗi — dùng ~/.config/orca/open-in-orca.sh <file>."
   fi
 
-  warn "Orca cần restart app để nhận keybindings + Window Blur."
+  warn "Orca cần restart app để nhận keybindings + Window Blur + app icon."
 else
   warn "Không thấy Orca (/Applications/Orca.app) — bỏ qua keybindings + settings."
   warn "Cài tay: brew install --cask stablyai/orca/orca (hoặc https://onorca.dev)."
