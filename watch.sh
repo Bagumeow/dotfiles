@@ -16,6 +16,9 @@
 #   - .claude/themes/*.json    -> ~/.claude/themes/ (chọn lại theme trong Claude Code)
 #   - orca/keybindings.json    -> ~/.orca/keybindings.json (restart Orca để nhận)
 #   - orca/settings.json       -> merge vào orca-data.json (chỉ khi Orca đã tắt)
+#   - orca/open-in-orca.sh     -> ~/.config/orca/ (applet gọi -> dùng ngay)
+#   - orca/open-in-orca.applescript -> compile lại ~/Applications/Open in Orca.app
+#   - orca/set-default-apps.sh -> bind lại app mặc định cho .py/.txt/.md/.sh
 #
 # Khác install.sh: KHÔNG tạo backup .bak mỗi lần lưu (tránh rác) — bản cũ đã
 # nằm trong git, repo là source of truth.
@@ -112,6 +115,34 @@ deploy() {
       # --if-possible tự bỏ qua nếu app đang chạy).
       "$DOTFILES_DIR/orca/apply-settings.sh" --if-possible || warn "merge settings Orca lỗi"
       ;;
+    "$DOTFILES_DIR"/orca/open-in-orca.sh)
+      [ -f "$DOTFILES_DIR/orca/open-in-orca.sh" ] || return 0  # file vừa bị xoá/đổi tên
+      mkdir -p ~/.config/orca
+      cp "$DOTFILES_DIR/orca/open-in-orca.sh" ~/.config/orca/open-in-orca.sh
+      chmod +x ~/.config/orca/open-in-orca.sh
+      # Applet chỉ gọi script này nên lần mở file kế tiếp là ăn ngay, không cần
+      # compile lại gì cả.
+      log "open-in-orca.sh -> ~/.config/orca/open-in-orca.sh"
+      ;;
+    "$DOTFILES_DIR"/orca/open-in-orca.applescript)
+      [ -f "$DOTFILES_DIR/orca/open-in-orca.applescript" ] || return 0  # file vừa bị xoá/đổi tên
+      # Sửa applet thì phải compile lại bundle; install.sh có thêm bước vá plist
+      # + ký lại, ở đây chỉ compile nhanh để test.
+      mkdir -p ~/Applications
+      rm -rf ~/Applications/"Open in Orca.app"
+      if osacompile -o ~/Applications/"Open in Orca.app" \
+           "$DOTFILES_DIR/orca/open-in-orca.applescript" 2>/dev/null; then
+        log "open-in-orca.applescript -> ~/Applications/Open in Orca.app (chạy ./install.sh để vá plist + ký lại)"
+      else
+        warn "compile applet 'Open in Orca' lỗi"
+      fi
+      ;;
+    "$DOTFILES_DIR"/orca/set-default-apps.sh)
+      [ -f "$DOTFILES_DIR/orca/set-default-apps.sh" ] || return 0  # file vừa bị xoá/đổi tên
+      # Script sửa Info.plist của applet rồi bind UTI — chạy thẳng từ repo,
+      # không copy đi đâu cả.
+      "$DOTFILES_DIR/orca/set-default-apps.sh" || warn "set app mặc định lỗi"
+      ;;
     *) ;;  # file lạ (swap/tmp của editor, .DS_Store, .bak...) — bỏ qua
   esac
 }
@@ -129,6 +160,10 @@ deploy "$DOTFILES_DIR/.claude/settings.json"
 for t in "$DOTFILES_DIR"/.claude/themes/*.json; do deploy "$t"; done
 deploy "$DOTFILES_DIR/orca/keybindings.json"
 deploy "$DOTFILES_DIR/orca/settings.json"
+deploy "$DOTFILES_DIR/orca/open-in-orca.sh"
+deploy "$DOTFILES_DIR/orca/open-in-orca.applescript"
+# set-default-apps.sh cố tình KHÔNG chạy ở lần sync đầu: nó đụng vào default app
+# của cả hệ thống, chỉ chạy khi mình thật sự sửa file đó (hoặc qua ./install.sh).
 
 log "Đang canh $DOTFILES_DIR (tmux/ alacritty/ zsh/ hammerspoon/ audio/ .claude/ orca/) — Ctrl-C để dừng."
 fswatch "$DOTFILES_DIR/tmux" "$DOTFILES_DIR/alacritty" "$DOTFILES_DIR/zsh" "$DOTFILES_DIR/hammerspoon" "$DOTFILES_DIR/audio" "$DOTFILES_DIR/.claude" "$DOTFILES_DIR/orca" |

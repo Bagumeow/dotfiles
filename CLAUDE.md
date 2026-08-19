@@ -103,7 +103,8 @@ scripts at `~/.config/tmux/*.sh` (`tmux-claude.sh`, `tmux-pwd.sh`,
 animated widgets rely on `status-interval 1`.
 
 **Orca (stably.ai desktop app) — only `keybindings.json` is ours.** Orca keeps
-three separate things on disk; the repo manages exactly one:
+three separate things on disk; of those, the repo manages exactly one (it also
+owns a few settings keys and the Finder shim — both covered further down):
 
 - `~/.orca/keybindings.json` — hand-edited, **in the repo** (`orca/keybindings.json`),
   copied verbatim by `install.sh`.
@@ -132,6 +133,56 @@ install is skipped when `/Applications/Orca.app` exists (the app self-updates, s
 can be ahead of the cask version). The config block in step 8 is skipped entirely
 unless `/Applications/Orca.app` or `~/.orca` exists. Neither keybindings nor settings
 can be live-reloaded — Orca has to be restarted, so `watch.sh` only stages the files.
+
+**Opening a file in Orca from Finder needs a shim — the app cannot do it.**
+Orca.app's `Info.plist` declares **no `CFBundleDocumentTypes`** (and no
+`CFBundleURLTypes`), so LaunchServices has nothing to bind: Orca never appears in
+Finder's *Open With*, double-click can't route to it, and `open -a Orca <file>`
+merely focuses the app. The only ingress is the CLI `orca file open`, which accepts
+a path only **inside a registered worktree** and resolves that worktree from the
+**current directory** — calling it from a different worktree fails with
+`invalid_relative_path`. Two repo files bridge this:
+
+- `orca/open-in-orca.sh` → `~/.config/orca/open-in-orca.sh`. It `cd`s into the
+  file's own directory — that `cd` is the entire trick, it's what makes Orca pick
+  the right worktree — boots the runtime if `orca status` fails, calls
+  `orca file open`, then `activate`s Orca (the CLI opens a tab but doesn't focus
+  the app). Failures go to a `display notification`, because nothing launched from
+  Finder has a terminal to print to.
+- `orca/open-in-orca.applescript` → `install.sh` `osacompile`s it into
+  `~/Applications/Open in Orca.app`. AppleScript applets declare
+  `CFBundleTypeExtensions = *`, so Finder hands them any file. Keep it logic-free:
+  it only forwards paths to the `.sh` — that way edits live-reload without a
+  recompile.
+
+`install.sh` post-processes the compiled bundle: adds a `CFBundleIdentifier`
+(`osacompile` emits none, and LaunchServices can't persist an *Open With → Change
+All* binding without one), sets the type role to `Editor`, then **re-signs with
+`codesign --force --sign -`** — editing the plist invalidates `osacompile`'s ad-hoc
+signature and macOS refuses to run the applet otherwise — and `lsregister -f`s it.
+Changing the plist without re-signing is the failure mode to watch for.
+
+`orca/set-default-apps.sh` (run by `install.sh`, needs `duti`) then makes the applet
+the **default** app for `.py`, `.txt`, `.md`, `.sh`. Two traps it encodes:
+
+- LaunchServices only binds an app to a UTI the app **declares**. The `*` wildcard
+  `osacompile` emits is enough for *Open With* but **not** for default-handler
+  status — `duti -s` exits 0 and changes nothing. So the script adds a second
+  `CFBundleDocumentTypes` entry with an explicit `LSItemContentTypes` array
+  (`LSHandlerRank = Alternate`), re-signs, `lsregister -f`s, and binds after that.
+  It also `killall cfprefsd` before verifying — freshly written bindings read back
+  stale otherwise, which looks like a failure that isn't one.
+- **Never add `public.html` to `DEFAULT_UTIS`.** macOS equates setting the
+  `public.html` handler with changing the default browser: it silently rebinds
+  `http`, `https` and `com.apple.default-app.web-browser` to the same app, so every
+  clicked link opens the applet. Recent macOS then refuses to change it back through
+  the API (`duti` → error -54/-50); recovery meant editing
+  `~/Library/Preferences/com.apple.LaunchServices/com.apple.launchservices.secure.plist`
+  by hand and `killall cfprefsd`. The script ends with a guard that detects the
+  hijack, restores Chrome, and dies. `.html` goes through right-click → *Open With*.
+
+`watch.sh` deliberately does **not** run `set-default-apps.sh` in its initial sync —
+it mutates system-wide defaults, so it only fires when that file itself is edited.
 
 ## Conventions in the configs
 

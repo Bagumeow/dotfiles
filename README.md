@@ -37,6 +37,9 @@ When it finishes: **open a new Alacritty window** → it drops you straight into
 | Arrow-key sound files | `audio/*.mp3` | `~/.hammerspoon/` |
 | Orca keybindings | `orca/keybindings.json` | `~/.orca/keybindings.json` |
 | Orca settings (theme, opacity) | `orca/settings.json` | `orca-data.json` of the active profile (jq-merged) |
+| Orca "open file from Finder" shim | `orca/open-in-orca.sh` | `~/.config/orca/open-in-orca.sh` |
+| Orca Finder applet | `orca/open-in-orca.applescript` | `~/Applications/Open in Orca.app` (compiled) |
+| Orca default-app bindings | `orca/set-default-apps.sh` | LaunchServices (`.py` `.txt` `.md` `.sh`) |
 | zsh | `zsh/.zshrc` | `~/.zshrc` |
 
 `install.sh` also installs: Homebrew, tmux, Alacritty, Hammerspoon, Orca, JetBrainsMono Nerd font, jq,
@@ -76,6 +79,61 @@ that file. `orca/settings.json` holds only the keys we own and `install.sh`/`wat
 > (`Cmd-Q`), then run `./install.sh`. The previous `orca-data.json` is copied to
 > `*.bak.<timestamp>` first.
 
+### Opening a file in Orca from Finder
+
+Orca.app declares **no `CFBundleDocumentTypes`** in its `Info.plist`, so
+LaunchServices has nothing to bind it to: Orca never shows up in Finder's
+*Open With*, double-click can't reach it, and `open -a Orca <file>` only focuses
+the app without opening the file. The only supported way in is the CLI
+`orca file open`, which additionally accepts a path only if it sits **inside a
+registered worktree** — it resolves the worktree from the current directory, so
+running it from the wrong one fails with `invalid_relative_path`.
+
+The repo bridges that gap with two files:
+
+- `orca/open-in-orca.sh` → `~/.config/orca/open-in-orca.sh` — `cd`s into the
+  file's own directory (which is what makes Orca resolve the right worktree),
+  boots the runtime if needed, calls `orca file open`, then brings Orca to the
+  front. Usable directly: `~/.config/orca/open-in-orca.sh <file>`.
+- `orca/open-in-orca.applescript` → compiled by `install.sh` into
+  `~/Applications/Open in Orca.app`. An AppleScript applet accepts **every** file
+  type (`CFBundleTypeExtensions = *`), so Finder *will* hand it a double-click.
+  It holds no logic — it just forwards the paths to the script above.
+
+`install.sh` also gives the applet a `CFBundleIdentifier` (`osacompile` omits it,
+and without one macOS can't remember an *Open With → Change All* choice), sets its
+role to `Editor`, re-signs it (editing the plist invalidates `osacompile`'s ad-hoc
+signature) and registers it with `lsregister`.
+
+Right-click → *Open With* → **Open in Orca** works immediately. For **double-click**,
+`install.sh` runs `orca/set-default-apps.sh`, which binds the applet as the default
+app for `.py`, `.txt`, `.md` and `.sh` via `duti` — no manual *Get Info → Change All*
+needed. Edit `DEFAULT_UTIS` in that script to change the list, then re-run it.
+
+```bash
+./orca/set-default-apps.sh          # bind the UTIs in DEFAULT_UTIS
+./orca/set-default-apps.sh --show   # show the current default apps
+./orca/set-default-apps.sh --unset  # hand them back to TextEdit
+```
+
+Two macOS details the script exists to handle:
+
+- LaunchServices only lets an app become the default for a UTI it **declares**.
+  `osacompile` emits only the legacy `CFBundleTypeExtensions = *`, which is enough
+  to appear in *Open With* but **not** to become a default — `duti -s` then fails
+  silently. So the script writes an explicit `LSItemContentTypes` array into the
+  applet's plist, re-signs, `lsregister`s, and only then binds.
+- **`.html` is deliberately excluded.** macOS treats "set the handler for
+  `public.html`" as "change the default browser": it rebinds `http`, `https` and
+  `com.apple.default-app.web-browser` too, so every link would open in the applet —
+  and recent macOS blocks changing it back via the API (`duti` returns error
+  -54/-50), leaving a hand-edit of the LaunchServices plist as the only repair. The
+  script hard-guards against this and restores Chrome if it ever detects it. Open
+  `.html` in Orca with right-click → *Open With* instead.
+
+A file in a folder Orca doesn't know shows a "not registered" notification —
+register it first with `orca repo add --path <folder>`.
+
 ## Live reload while editing this repo (`watch.sh`)
 
 `install.sh` **copies** files (no symlinks), so editing a file in the repo does
@@ -102,6 +160,9 @@ possible:
 | `.claude/themes/*.json` | copied → re-pick the theme in Claude Code to apply |
 | `orca/keybindings.json` | copied → **restart Orca** to pick it up |
 | `orca/settings.json` | `jq`-merged into the active profile's `orca-data.json` (**skipped while Orca runs**) |
+| `orca/open-in-orca.sh` | copied + `chmod +x` → the applet picks it up on the next open |
+| `orca/open-in-orca.applescript` | applet recompiled (run `./install.sh` to also patch the plist + re-sign) |
+| `orca/set-default-apps.sh` | re-run → rebinds the default app for `.py` `.txt` `.md` `.sh` |
 
 Unlike `install.sh`, it does **not** create `.bak` backups on every save — the
 old version is already in git. Requires `fswatch` (installed by `install.sh`).

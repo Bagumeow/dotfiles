@@ -51,6 +51,7 @@ log "Cài tmux, Alacritty, font Nerd, jq + CLI mà .zshrc cần..."
 brew list jq              >/dev/null 2>&1 || brew install jq
 brew list tmux            >/dev/null 2>&1 || brew install tmux
 brew list fswatch         >/dev/null 2>&1 || brew install fswatch     # watch.sh (live reload) cần
+brew list duti            >/dev/null 2>&1 || brew install duti        # set app mặc định cho .py/.txt/.md/.sh
 # CLI mà .zshrc tham chiếu (alias + prompt + thefuck). Dùng `command -v`
 # để khỏi cài lại nếu đã có sẵn ngoài Homebrew.
 command -v thefuck        >/dev/null 2>&1 || brew install thefuck     # eval $(thefuck --alias)
@@ -172,11 +173,13 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 8) Orca (stably.ai) — keybindings + settings (theme, độ trong suốt)
-#    App được cài ở bước 1 qua tap `stablyai/orca`. Repo chỉ quản 2 thứ:
+# 8) Orca (stably.ai) — keybindings + settings (theme, độ trong suốt) + Finder shim
+#    App được cài ở bước 1 qua tap `stablyai/orca`. Repo chỉ quản 3 thứ:
 #      - orca/keybindings.json -> ~/.orca/keybindings.json (copy thẳng)
 #      - orca/settings.json    -> merge vào profiles/<id>/orca-data.json
 #        (qua orca/apply-settings.sh — xem header script đó)
+#      - orca/open-in-orca.{sh,applescript} -> ~/.config/orca/ + applet
+#        ~/Applications/Open in Orca.app (xem header 2 file đó)
 #    Settings của Orca nằm CHUNG trong state file orca-data.json (projects,
 #    worktree, session...) nên chỉ merge đúng mấy key mình own, không copy cả file.
 #    Không quản lý ~/.orca/agent-hooks/*.sh (Orca tự sinh, khớp version app) và
@@ -192,6 +195,42 @@ if [ -d "$HOME/.orca" ] || [ -d "/Applications/Orca.app" ]; then
   # Settings (theme, độ trong suốt) chỉ merge được khi Orca đã tắt -> mode
   # --if-possible: Orca đang chạy thì bỏ qua kèm hướng dẫn, không làm install.sh die.
   "$DOTFILES_DIR/orca/apply-settings.sh" --if-possible || warn "merge settings Orca lỗi"
+
+  # Shim mở file từ Finder. Orca.app không khai báo CFBundleDocumentTypes nên
+  # LaunchServices không bind được loại file nào cho nó -> double-click và
+  # `open -a Orca <file>` đều không mở được file. Applet AppleScript nhận mọi
+  # loại file (CFBundleTypeExtensions = *) rồi gọi CLI `orca file open`.
+  log "Đặt shim 'Open in Orca' cho Finder..."
+  mkdir -p "$HOME/.config/orca" "$HOME/Applications"
+  backup "$HOME/.config/orca/open-in-orca.sh"
+  cp "$DOTFILES_DIR/orca/open-in-orca.sh" "$HOME/.config/orca/open-in-orca.sh"
+  chmod +x "$HOME/.config/orca/open-in-orca.sh"
+
+  ORCA_APPLET="$HOME/Applications/Open in Orca.app"
+  rm -rf "$ORCA_APPLET"   # osacompile không ghi đè bundle có sẵn
+  if osacompile -o "$ORCA_APPLET" "$DOTFILES_DIR/orca/open-in-orca.applescript" 2>/dev/null; then
+    # osacompile không sinh CFBundleIdentifier; thiếu nó thì LaunchServices không
+    # nhớ được lựa chọn "Change All". Role Editor để applet đủ tư cách làm app
+    # mặc định chứ không chỉ "Open With".
+    ORCA_APPLET_PLIST="$ORCA_APPLET/Contents/Info.plist"
+    /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string com.nghiale.open-in-orca" \
+      "$ORCA_APPLET_PLIST" >/dev/null 2>&1 || true
+    /usr/libexec/PlistBuddy -c "Set :CFBundleDocumentTypes:0:CFBundleTypeRole Editor" \
+      "$ORCA_APPLET_PLIST" >/dev/null 2>&1 || true
+    # Sửa plist xong là chữ ký ad-hoc của osacompile hỏng -> ký lại, không macOS
+    # sẽ từ chối chạy applet.
+    codesign --force --sign - "$ORCA_APPLET" >/dev/null 2>&1 || true
+    LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+    [ -x "$LSREGISTER" ] && "$LSREGISTER" -f "$ORCA_APPLET" >/dev/null 2>&1
+
+    # Đặt applet làm app mặc định cho .py/.txt/.md/.sh (thay cho Get Info ->
+    # Open With -> Change All làm tay). Script tự khai báo UTI vào Info.plist
+    # rồi mới bind — xem header script để biết vì sao .html bị loại trừ.
+    "$DOTFILES_DIR/orca/set-default-apps.sh" || warn "set app mặc định lỗi"
+  else
+    warn "compile applet 'Open in Orca' lỗi — dùng ~/.config/orca/open-in-orca.sh <file>."
+  fi
+
   warn "Orca cần restart app để nhận keybindings + Window Blur."
 else
   warn "Không thấy Orca (/Applications/Orca.app) — bỏ qua keybindings + settings."

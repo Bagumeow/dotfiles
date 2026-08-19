@@ -37,6 +37,9 @@ Sau khi xong: **mở một cửa sổ Alacritty mới** → tự vào tmux.
 | File tiếng phím mũi tên | `audio/*.mp3` | `~/.hammerspoon/` |
 | keybindings Orca | `orca/keybindings.json` | `~/.orca/keybindings.json` |
 | settings Orca (theme, độ trong suốt) | `orca/settings.json` | `orca-data.json` của profile đang active (merge jq) |
+| shim "mở file từ Finder" của Orca | `orca/open-in-orca.sh` | `~/.config/orca/open-in-orca.sh` |
+| applet Finder cho Orca | `orca/open-in-orca.applescript` | `~/Applications/Open in Orca.app` (compile ra) |
+| app mặc định cho Orca | `orca/set-default-apps.sh` | LaunchServices (`.py` `.txt` `.md` `.sh`) |
 | zsh | `zsh/.zshrc` | `~/.zshrc` |
 
 `install.sh` còn tự cài: Homebrew, tmux, Alacritty, Hammerspoon, Orca, font JetBrainsMono Nerd, jq,
@@ -74,6 +77,59 @@ Orca không có CLI để set settings, và settings của nó nằm **ngay tron
 > đè lại `orca-data.json` nên sẽ mất thay đổi. Tắt hẳn Orca (`Cmd-Q`) rồi chạy
 > `./install.sh`. Bản `orca-data.json` cũ được copy thành `*.bak.<timestamp>` trước.
 
+### Mở file trong Orca từ Finder
+
+Orca.app **không khai báo `CFBundleDocumentTypes`** trong `Info.plist`, nên
+LaunchServices không có gì để bind: Orca không bao giờ hiện trong *Open With* của
+Finder, double-click không tới được nó, và `open -a Orca <file>` chỉ focus app chứ
+không mở file. Đường duy nhất Orca hỗ trợ là CLI `orca file open`, mà CLI này chỉ
+nhận path nằm **trong một worktree đã đăng ký** — nó resolve worktree theo thư mục
+hiện tại, chạy từ worktree khác là lỗi `invalid_relative_path`.
+
+Repo vá chỗ đó bằng 2 file:
+
+- `orca/open-in-orca.sh` → `~/.config/orca/open-in-orca.sh` — `cd` vào đúng thư mục
+  chứa file (chính là thứ khiến Orca resolve đúng worktree), khởi động runtime nếu
+  cần, gọi `orca file open` rồi đưa Orca lên trước. Dùng trực tiếp được:
+  `~/.config/orca/open-in-orca.sh <file>`.
+- `orca/open-in-orca.applescript` → `install.sh` compile thành
+  `~/Applications/Open in Orca.app`. Applet AppleScript nhận **mọi** loại file
+  (`CFBundleTypeExtensions = *`) nên Finder chịu đưa double-click cho nó. Applet
+  không xử lý gì cả, chỉ chuyển path cho script ở trên.
+
+`install.sh` còn thêm `CFBundleIdentifier` cho applet (`osacompile` không sinh, mà
+thiếu nó thì macOS không nhớ được lựa chọn *Open With → Change All*), đặt role
+`Editor`, ký lại (sửa plist là hỏng chữ ký ad-hoc của `osacompile`) và đăng ký với
+`lsregister`.
+
+Right-click → *Open With* → **Open in Orca** là dùng được ngay. Còn **double-click**
+thì `install.sh` chạy `orca/set-default-apps.sh`, script này dùng `duti` bind applet
+làm app mặc định cho `.py`, `.txt`, `.md`, `.sh` — không phải làm tay *Get Info →
+Change All*. Muốn đổi danh sách thì sửa `DEFAULT_UTIS` trong script rồi chạy lại.
+
+```bash
+./orca/set-default-apps.sh          # bind các UTI trong DEFAULT_UTIS
+./orca/set-default-apps.sh --show   # xem app mặc định hiện tại
+./orca/set-default-apps.sh --unset  # trả lại cho TextEdit
+```
+
+Hai chỗ khó của macOS mà script sinh ra để xử lý:
+
+- LaunchServices chỉ cho một app làm mặc định cho UTI mà app đó **khai báo**.
+  `osacompile` chỉ sinh `CFBundleTypeExtensions = *` (dạng cũ) — đủ để hiện trong
+  *Open With* nhưng **không** đủ để làm default, nên `duti -s` chạy xong im lặng mà
+  không đổi gì. Vì vậy script ghi hẳn mảng `LSItemContentTypes` vào plist của applet,
+  ký lại, `lsregister`, rồi mới bind.
+- **`.html` cố tình bị loại trừ.** macOS coi "set handler cho `public.html`" CHÍNH LÀ
+  "đổi trình duyệt mặc định": nó bind luôn `http`, `https` và
+  `com.apple.default-app.web-browser` — mọi link bấm ở đâu cũng mở bằng applet. Tệ
+  hơn, macOS đời mới chặn đổi lại bằng API (`duti` báo lỗi -54/-50), phải sửa tay
+  plist LaunchServices mới cứu được. Script có bước chặn sẵn và tự trả Chrome về nếu
+  phát hiện. File `.html` thì mở bằng right-click → *Open With*.
+
+File nằm ở thư mục Orca chưa biết sẽ hiện notification "chưa đăng ký" — thêm bằng
+`orca repo add --path <thư mục>` trước.
+
 ## Live reload khi đang sửa repo này (`watch.sh`)
 
 `install.sh` **copy** file (không symlink), nên sửa file trong repo sẽ không có
@@ -99,6 +155,9 @@ gồm cả thay `__TMUX_LAUNCH__` và `chmod +x`) và reload nơi nào được:
 | `.claude/themes/*.json` | copy → chọn lại theme trong Claude Code để áp dụng |
 | `orca/keybindings.json` | copy → **restart Orca** để nhận |
 | `orca/settings.json` | merge jq vào `orca-data.json` của profile active (**bỏ qua khi Orca đang chạy**) |
+| `orca/open-in-orca.sh` | copy + `chmod +x` → applet ăn ngay ở lần mở file kế tiếp |
+| `orca/open-in-orca.applescript` | compile lại applet (chạy `./install.sh` để vá plist + ký lại) |
+| `orca/set-default-apps.sh` | chạy lại → bind lại app mặc định cho `.py` `.txt` `.md` `.sh` |
 
 Khác `install.sh`: **không** tạo backup `.bak` mỗi lần lưu — bản cũ đã nằm
 trong git. Cần `fswatch` (`install.sh` tự cài).
