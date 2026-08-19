@@ -217,6 +217,15 @@ if [ -d "$HOME/.orca" ] || [ -d "/Applications/Orca.app" ]; then
       "$ORCA_APPLET_PLIST" >/dev/null 2>&1 || true
     /usr/libexec/PlistBuddy -c "Set :CFBundleDocumentTypes:0:CFBundleTypeRole Editor" \
       "$ORCA_APPLET_PLIST" >/dev/null 2>&1 || true
+    # osacompile gán icon droplet mặc định của AppleScript -> mượn icon của
+    # Orca.app cho dễ nhận ra trong Finder / Open With / Dock. Phải xoá cả
+    # CFBundleIconName (trỏ vào Assets.car) không macOS vẫn lấy icon trong đó.
+    ORCA_ICNS="/Applications/Orca.app/Contents/Resources/icon.icns"
+    if [ -f "$ORCA_ICNS" ]; then
+      cp "$ORCA_ICNS" "$ORCA_APPLET/Contents/Resources/droplet.icns"
+      /usr/libexec/PlistBuddy -c "Delete :CFBundleIconName" \
+        "$ORCA_APPLET_PLIST" >/dev/null 2>&1 || true
+    fi
     # Sửa plist xong là chữ ký ad-hoc của osacompile hỏng -> ký lại, không macOS
     # sẽ từ chối chạy applet.
     codesign --force --sign - "$ORCA_APPLET" >/dev/null 2>&1 || true
